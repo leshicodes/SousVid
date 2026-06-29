@@ -4,15 +4,15 @@ main.py -- FastAPI application entry point for SousVid.
 Endpoints:
     GET  /          -> Web UI
     GET  /health    -> Liveness and readiness check
-    POST /extract   -> Run the recipe extraction pipeline
-"""
+    GET  /share     -> Mobile share-sheet redirect (pre-fills the UI with ?url=)
+    POST /extract   -> Run the recipe extraction pipeline"""
 import asyncio
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
@@ -60,6 +60,36 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 @app.get("/", include_in_schema=False)
 def index():
     return FileResponse("static/index.html")
+
+
+@app.get("/share", include_in_schema=False)
+def share(request: Request, url: str = Query(default=None)):
+    """
+    Mobile share-sheet endpoint.
+
+    iOS and Android share sheets POST or GET a target URL via a configurable
+    action URL.  Registering this app's share-sheet action as::
+
+        https://<host>/share?url={url}
+
+    will land here.  We redirect to the main UI with the URL pre-filled so the
+    user can review and tap "Extract" -- no pipeline work is done here.
+
+    Uses an absolute Location header (scheme + host included) to prevent mobile
+    browsers from mangling the ``?url=`` param when resolving relative redirects.
+
+    Returns 400 if no ``url`` query param is provided (misconfigured share sheet).
+    """
+    if not url:
+        raise HTTPException(
+            status_code=400,
+            detail="Missing required query parameter: url",
+        )
+    from urllib.parse import quote
+    # Build absolute redirect so Safari / Chrome on mobile don't drop the '?'
+    # when resolving a relative-path Location header.
+    base = str(request.base_url).rstrip("/")
+    return RedirectResponse(url=f"{base}/?url={quote(url, safe='')}", status_code=302)
 
 
 @app.get("/health", tags=["Meta"])

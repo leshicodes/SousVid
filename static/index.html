@@ -688,6 +688,20 @@
       if (e.key === "Enter") startExtract();
     });
 
+    // ── Share-sheet pre-fill ──────────────────────────────────
+    // When arriving via GET /share?url=..., the server redirects to /?url=...
+    // We pick that up here and auto-populate (and auto-submit) the form.
+    (function handleShareParam() {
+      const params = new URLSearchParams(window.location.search);
+      const sharedUrl = params.get("url");
+      if (!sharedUrl) return;
+      document.getElementById("urlInput").value = sharedUrl;
+      // Clean the ?url= from the address bar without reloading
+      history.replaceState(null, "", "/");
+      // Auto-submit so the user gets the result with one tap
+      startExtract();
+    })();
+
     // ── Downloads ────────────────────────────────────────────
     let _lastData = null;
 

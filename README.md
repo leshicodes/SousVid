@@ -240,7 +240,7 @@ ruff check app/ tests/
 - [x] Extended `/health` endpoint with subsystem status
 - [ ] Mealie tag support -- tags need to exist in Mealie before they can be referenced
 - [ ] Job queue -- the `/extract` endpoint blocks for up to ~90s; Celery + Redis would enable concurrent extractions and progress polling
-- [ ] Mobile share sheet -- a `/share` endpoint compatible with iOS/Android share sheets
+- [x] Mobile share sheet -- a `/share` endpoint compatible with iOS/Android share sheets
 - [ ] Batch import -- accept a list of URLs and process sequentially
 - [ ] Cookie auto-refresh warning -- detect expired Instagram cookies and surface a clear UI message
 - [ ] GPU support -- Dockerfile is CPU-only; add a CUDA variant for Nvidia GPU acceleration
