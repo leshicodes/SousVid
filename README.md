@@ -13,9 +13,9 @@ flowchart TD
     A(["fa:fa-user User pastes video URL"])
     B["yt-dlp\ndownload video + extract caption"]
     C{"Caption looks\nlike a recipe?"}
-    D["\ud83d\uddbc ffmpeg: extract frames\n\ud83c\udfa4 Whisper: transcribe audio"]
-    E["Caption used directly\n\ud83d\udcac Whisper skipped"]
-    F["\ud83e\udd16 OpenRouter LLM\nextract structured recipe"]
+    D["ffmpeg: extract frames\n Whisper: transcribe audio"]
+    E["Caption used directly\n Whisper skipped"]
+    F["OpenRouter LLM\nextract structured recipe"]
     G{"Push to\nMealie?"}
     H["\ud83c\udf74 POST to Mealie\nrecipe created with org_url"]
     I(["\ud83d\udcc4 Return to UI\nJSON + Markdown download + Mealie link"])
