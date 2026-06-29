@@ -4,7 +4,6 @@ test_mealie.py -- Tests for _build_schema_org().
 Verifies that the schema.org payload is built correctly in all combinations
 of input fields, with and without a source URL.
 """
-import pytest
 
 from app.mealie import _build_schema_org
 from app.models import RecipeInstruction, RecipeSchema

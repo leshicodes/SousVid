@@ -1,524 +1,1179 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SousVid</title>
-  <meta name="description" content="Convert cooking videos from Instagram, TikTok, and YouTube into structured Mealie recipes." />
+  <title>SousVid -- Video to Recipe Pipeline</title>
+  <meta name="description"
+    content="Convert cooking videos from Instagram, TikTok, and YouTube into structured Mealie recipes." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     :root {
-      --bg:        #0d0f14;
-      --surface:   #161920;
-      --surface2:  #1e2229;
-      --border:    #2a2f3a;
-      --accent:    #6c63ff;
-      --accent2:   #a78bfa;
-      --green:     #34d399;
-      --red:       #f87171;
-      --text:      #e8eaf0;
-      --muted:     #6b7280;
-      --radius:    14px;
+      --bg-base: #0c0d0e;
+      --bg-panel: #161514;
+      --bg-panel-hover: #22201e;
+      --bg-card: rgba(28, 26, 25, 0.75);
+      --border-color: #2c2927;
+      --accent-primary: #e8562a;
+      --accent-primary-hover: #ff6e42;
+      --accent-secondary: #ffd591;
+      --mealie-green: #36cfc9;
+      --mealie-green-hover: #13c2c2;
+      --text-primary: #ffffff;
+      --text-secondary: #a09b97;
+      --text-muted: #66615e;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --font-heading: 'Lora', serif;
+      --font-body: 'Outfit', sans-serif;
+      --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .lucide {
+      stroke-width: 2px;
+      vertical-align: middle;
+      display: inline-block;
     }
 
     body {
-      font-family: 'Inter', sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      font-family: var(--font-body);
+      background: var(--bg-base);
+      color: var(--text-primary);
       min-height: 100vh;
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 40px 16px 80px;
-    }
-
-    /* ── Header ── */
-    header {
-      text-align: center;
-      margin-bottom: 48px;
-    }
-    .logo {
-      font-size: 2.4rem;
-      margin-bottom: 12px;
-    }
-    header h1 {
-      font-size: 1.9rem;
-      font-weight: 700;
-      background: linear-gradient(135deg, var(--accent2), var(--accent));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 8px;
-    }
-    header p {
-      color: var(--muted);
-      font-size: 0.95rem;
-      max-width: 420px;
-    }
-
-    /* ── Card ── */
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 32px;
-      width: 100%;
-      max-width: 680px;
-      box-shadow: 0 8px 40px rgba(0,0,0,0.4);
-    }
-
-    /* ── Input row ── */
-    .input-row {
-      display: flex;
-      gap: 10px;
-    }
-    input[type="url"] {
-      flex: 1;
-      background: var(--surface2);
-      border: 1.5px solid var(--border);
-      border-radius: 10px;
-      padding: 12px 16px;
-      color: var(--text);
-      font-family: inherit;
-      font-size: 0.95rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    input[type="url"]:focus {
-      border-color: var(--accent);
-    }
-    input[type="url"]::placeholder { color: var(--muted); }
-
-    button#extractBtn {
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      border: none;
-      border-radius: 10px;
-      padding: 12px 24px;
-      color: #fff;
-      font-family: inherit;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: opacity 0.2s, transform 0.15s;
-    }
-    button#extractBtn:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
-    button#extractBtn:active:not(:disabled) { transform: translateY(0); }
-    button#extractBtn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    /* ── Status messages ── */
-    #status {
-      margin-top: 20px;
-      font-size: 0.9rem;
-      min-height: 24px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: var(--muted);
-    }
-    .spinner {
-      width: 18px; height: 18px;
-      border: 2.5px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      flex-shrink: 0;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    #errorMsg {
-      margin-top: 16px;
-      background: rgba(248,113,113,0.1);
-      border: 1px solid rgba(248,113,113,0.3);
-      border-radius: 10px;
-      padding: 12px 16px;
-      color: var(--red);
-      font-size: 0.88rem;
-      display: none;
-    }
-
-    /* ── Result ── */
-    #result {
-      margin-top: 32px;
-      display: none;
-      animation: fadeUp 0.4s ease;
-    }
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(12px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    .result-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 24px;
-      flex-wrap: wrap;
-    }
-    .result-header h2 {
-      font-size: 1.4rem;
-      font-weight: 700;
-      line-height: 1.3;
-    }
-    a#mealieLink {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--green);
-      color: #0d1a12;
-      font-weight: 600;
-      font-size: 0.85rem;
-      padding: 8px 16px;
-      border-radius: 8px;
-      text-decoration: none;
-      white-space: nowrap;
-      transition: opacity 0.2s, transform 0.15s;
-      flex-shrink: 0;
-    }
-    a#mealieLink:hover { opacity: 0.88; transform: translateY(-1px); }
-
-    .action-buttons {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      flex-shrink: 0;
-    }
-    .btn-download {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      border: 1.5px solid var(--border);
-      background: var(--surface2);
-      color: var(--text);
-      font-family: inherit;
-      font-size: 0.82rem;
-      font-weight: 500;
-      padding: 7px 14px;
-      border-radius: 8px;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: border-color 0.2s, background 0.2s, transform 0.15s;
-    }
-    .btn-download:hover { border-color: var(--accent2); background: var(--surface); transform: translateY(-1px); }
-
-    #mealieWarning {
-      margin-top: 14px;
-      background: rgba(251,191,36,0.08);
-      border: 1px solid rgba(251,191,36,0.3);
-      border-radius: 10px;
-      padding: 10px 14px;
-      font-size: 0.83rem;
-      color: #fbbf24;
-      display: none;
-    }
-
-    .divider {
-      height: 1px;
-      background: var(--border);
-      margin: 20px 0;
-    }
-
-    .meta-row {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
-    }
-    .meta-pill {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 4px 12px;
-      font-size: 0.82rem;
-      color: var(--muted);
-    }
-    .meta-pill span { color: var(--text); font-weight: 500; }
-
-    .section-title {
-      font-size: 0.75rem;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--accent2);
-      margin-bottom: 12px;
-    }
-
-    #description {
-      color: var(--muted);
-      font-size: 0.92rem;
-      line-height: 1.6;
-      margin-bottom: 24px;
-    }
-
-    /* Ingredients */
-    #ingredientsList {
-      list-style: none;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 8px;
-      margin-bottom: 24px;
-    }
-    #ingredientsList li {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 8px 12px;
-      font-size: 0.88rem;
-      line-height: 1.4;
-    }
-
-    /* Instructions */
-    #instructionsList {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-bottom: 24px;
-    }
-    #instructionsList li {
-      display: flex;
-      gap: 14px;
-      align-items: flex-start;
-    }
-    .step-num {
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: #fff;
-      font-size: 0.78rem;
-      font-weight: 700;
-      width: 26px; height: 26px;
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-      margin-top: 1px;
-    }
-    .step-text {
-      font-size: 0.92rem;
-      line-height: 1.6;
-      color: var(--text);
-      padding-top: 3px;
-    }
-
-    /* Keywords */
-    #keywordsList {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .keyword {
-      background: rgba(108,99,255,0.12);
-      border: 1px solid rgba(108,99,255,0.3);
-      color: var(--accent2);
-      border-radius: 20px;
-      padding: 3px 12px;
-      font-size: 0.82rem;
-    }
-
-    /* Transcript toggle */
-    details {
-      margin-top: 20px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
       overflow: hidden;
     }
-    summary {
-      padding: 10px 14px;
-      cursor: pointer;
-      font-size: 0.85rem;
-      color: var(--muted);
-      user-select: none;
-    }
-    summary:hover { color: var(--text); }
-    #transcriptText {
-      padding: 12px 14px;
-      font-size: 0.82rem;
-      color: var(--muted);
-      line-height: 1.6;
-      border-top: 1px solid var(--border);
-      white-space: pre-wrap;
+
+    /* ── Left Sidebar ── */
+    .sidebar {
+      width: 360px;
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+      gap: 24px;
+      height: 100vh;
+      overflow-y: auto;
+      flex-shrink: 0;
     }
 
-    /* Supported platforms note */
-    .platforms {
-      margin-top: 16px;
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      font-size: 2.2rem;
+      color: var(--accent-primary);
+      display: flex;
+      align-items: center;
+    }
+
+    .brand-text h2 {
+      font-family: var(--font-heading);
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+
+    .brand-text p {
       font-size: 0.78rem;
-      color: var(--muted);
-      text-align: center;
+      color: var(--text-secondary);
+      font-weight: 400;
     }
 
-    /* ── Mealie toggle ── */
+    .input-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .section-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+    }
+
+    input[type="url"] {
+      width: 100%;
+      background: var(--bg-base);
+      border: 1.5px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 0.88rem;
+      outline: none;
+      transition: var(--transition);
+    }
+
+    input[type="url"]:focus {
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 2px rgba(232, 86, 42, 0.2);
+    }
+
+    /* Toggle row */
     .toggle-row {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 12px;
-      margin-top: 16px;
-      padding: 10px 14px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 10px;
     }
-    .toggle-label {
-      flex: 1;
-      font-size: 0.87rem;
-      color: var(--text);
+
+    .toggle-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
     }
-    .toggle-label small {
-      display: block;
-      font-size: 0.76rem;
-      color: var(--muted);
-      margin-top: 2px;
+
+    .toggle-title {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-primary);
     }
-    /* Pill switch */
+
+    .toggle-desc {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    /* Switch */
     .switch {
       position: relative;
       display: inline-block;
-      width: 44px;
-      height: 24px;
+      width: 40px;
+      height: 22px;
       flex-shrink: 0;
     }
-    .switch input { opacity: 0; width: 0; height: 0; }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
     .slider {
       position: absolute;
       inset: 0;
-      background: var(--border);
-      border-radius: 24px;
+      background: var(--border-color);
+      border-radius: 22px;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: var(--transition);
     }
+
     .slider::before {
       content: "";
       position: absolute;
-      width: 18px; height: 18px;
+      width: 16px;
+      height: 16px;
       border-radius: 50%;
       background: #fff;
-      left: 3px; top: 3px;
-      transition: transform 0.2s;
+      left: 3px;
+      top: 3px;
+      transition: var(--transition);
     }
-    .switch input:checked + .slider { background: var(--accent); }
-    .switch input:checked + .slider::before { transform: translateX(20px); }
+
+    .switch input:checked+.slider {
+      background: var(--mealie-green);
+    }
+
+    .switch input:checked+.slider::before {
+      transform: translateX(18px);
+    }
+
+    button#extractBtn {
+      background: var(--accent-primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+
+    button#extractBtn:hover:not(:disabled) {
+      background: var(--accent-primary-hover);
+      transform: translateY(-1px);
+    }
+
+    button#extractBtn:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    button#extractBtn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* Queue Section */
+    .queue-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+      min-height: 200px;
+    }
+
+    .queue-header {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 8px;
+    }
+
+    .queue-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+      padding-right: 2px;
+    }
+
+    .queue-item {
+      background: var(--bg-panel-hover);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+    }
+
+    .queue-item:hover {
+      border-color: var(--text-secondary);
+      background: var(--bg-panel);
+    }
+
+    .queue-item.active {
+      background: var(--bg-panel);
+      border-color: var(--accent-primary);
+      border-width: 1.5px;
+    }
+
+    .queue-item .item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .queue-item .item-badge {
+      font-size: 0.6rem;
+      font-weight: 700;
+      color: var(--accent-secondary);
+      letter-spacing: 0.04em;
+    }
+
+    .queue-item .item-status {
+      font-size: 0.62rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .queue-item .item-status.done {
+      color: var(--mealie-green);
+    }
+
+    .queue-item .item-status.running {
+      color: var(--accent-primary);
+      animation: pulse 1.5s infinite;
+    }
+
+    .queue-item .item-status.queued {
+      color: var(--text-secondary);
+    }
+
+    .queue-item .item-status.failed {
+      color: #f87171;
+    }
+
+    .queue-item .item-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding-right: 16px;
+    }
+
+    .queue-item .delete-btn {
+      position: absolute;
+      right: 12px;
+      bottom: 12px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      transition: var(--transition);
+    }
+
+    .queue-item .delete-btn:hover {
+      color: var(--accent-primary);
+      background: rgba(232, 86, 42, 0.1);
+    }
+
+    .sidebar-footer {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-align: center;
+      line-height: 1.4;
+      border-top: 1px solid var(--border-color);
+      padding-top: 12px;
+    }
+
+    /* ── Main Content Area ── */
+    .main-content {
+      flex: 1;
+      padding: 40px;
+      height: 100vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Welcome / Empty State */
+    .welcome-state {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      min-height: 500px;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .welcome-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 48px 32px;
+      max-width: 580px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .welcome-icon {
+      font-size: 3.5rem;
+      margin-bottom: 8px;
+    }
+
+    .welcome-card h1 {
+      font-family: var(--font-heading);
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .welcome-card p {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    .welcome-features {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      text-align: left;
+      margin-top: 12px;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .feature-item {
+      display: flex;
+      gap: 10px;
+      font-size: 0.88rem;
+      color: var(--text-primary);
+    }
+
+    .feature-badge {
+      color: var(--accent-primary);
+      font-weight: bold;
+    }
+
+    /* Recipe Container */
+    .result-container {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      animation: fadeUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .recipe-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 20px;
+    }
+
+    .recipe-header h1 {
+      font-family: var(--font-heading);
+      font-size: 2.2rem;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .recipe-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-panel-hover);
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .action-btn:hover {
+      border-color: var(--accent-secondary);
+      background: var(--bg-panel);
+    }
+
+    .action-btn.mealie-btn {
+      background: var(--mealie-green);
+      color: #0c0d0e;
+      border: none;
+    }
+
+    .action-btn.mealie-btn:hover {
+      background: var(--mealie-green-hover);
+      transform: translateY(-1px);
+    }
+
+    .recipe-warning {
+      background: rgba(251, 191, 36, 0.08);
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      font-size: 0.85rem;
+      color: var(--accent-secondary);
+      display: none;
+    }
+
+    .recipe-desc {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: var(--text-secondary);
+      max-width: 800px;
+      font-style: italic;
+    }
+
+    /* Metadata pills */
+    .meta-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .meta-pill {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .meta-pill span {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    /* Grid columns */
+    .recipe-grid {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 32px;
+      align-items: start;
+    }
+
+    .column-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--accent-secondary);
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 6px;
+    }
+
+    /* Ingredients checkboxes */
+    .ingredients-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .ing-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      cursor: pointer;
+      user-select: none;
+      transition: var(--transition);
+    }
+
+    .ing-row:hover {
+      border-color: var(--text-muted);
+      background: var(--bg-panel-hover);
+    }
+
+    .ing-row.completed {
+      opacity: 0.45;
+      text-decoration: line-through;
+    }
+
+    .ing-checkbox {
+      width: 16px;
+      height: 16px;
+      border: 1.5px solid var(--text-muted);
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: var(--transition);
+    }
+
+    .ing-row.completed .ing-checkbox {
+      border-color: var(--mealie-green);
+      background: var(--mealie-green);
+    }
+
+    .ing-checkbox::after {
+      content: "✓";
+      color: #0c0d0e;
+      font-size: 0.68rem;
+      font-weight: bold;
+      display: none;
+    }
+
+    .ing-row.completed .ing-checkbox::after {
+      display: block;
+    }
+
+    .ing-text {
+      font-size: 0.88rem;
+      color: var(--text-primary);
+      line-height: 1.4;
+    }
+
+    .ing-row.completed .ing-text {
+      color: var(--text-secondary);
+    }
+
+    /* Instructions Column */
+    .instructions-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .step-card {
+      display: flex;
+      gap: 14px;
+      background: transparent;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      transition: var(--transition);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .step-card:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .step-card.done {
+      opacity: 0.4;
+    }
+
+    .step-badge {
+      width: 24px;
+      height: 24px;
+      background: var(--accent-primary);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+      transition: var(--transition);
+    }
+
+    .step-card.done .step-badge {
+      background: var(--border-color);
+      color: var(--text-muted);
+    }
+
+    .step-card.upcoming .step-badge {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+    }
+
+    .step-text {
+      font-size: 0.92rem;
+      line-height: 1.6;
+      color: var(--text-primary);
+      flex: 1;
+    }
+
+    .step-card.done .step-text {
+      text-decoration: line-through;
+    }
+
+    /* Tags section */
+    .tags-section {
+      margin-top: 16px;
+    }
+
+    .tags-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag-pill {
+      background: rgba(232, 86, 42, 0.08);
+      border: 1px solid rgba(232, 86, 42, 0.25);
+      color: var(--accent-secondary);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      transition: var(--transition);
+    }
+
+    .tag-pill:hover {
+      border-color: var(--accent-secondary);
+      background: rgba(232, 86, 42, 0.15);
+    }
+
+    /* Collapsible log detail */
+    details {
+      margin-top: 32px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      background: var(--bg-panel);
+    }
+
+    summary {
+      padding: 12px 16px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      user-select: none;
+      font-weight: 500;
+      transition: var(--transition);
+    }
+
+    summary:hover {
+      color: var(--text-primary);
+      background: var(--bg-panel-hover);
+    }
+
+    #transcriptText {
+      padding: 16px;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      border-top: 1px solid var(--border-color);
+      white-space: pre-wrap;
+      background: var(--bg-base);
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    /* Error Message */
+    #errorMsg {
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      color: #f87171;
+      font-size: 0.82rem;
+      display: none;
+      line-height: 1.4;
+    }
+
+    /* Live Progress Bar Container */
+    .progress-timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .progress-step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      transition: var(--transition);
+    }
+
+    .progress-step.active {
+      color: var(--accent-primary);
+      font-weight: 600;
+    }
+
+    .progress-step.completed {
+      color: var(--mealie-green);
+    }
+
+    .progress-step-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--border-color);
+      flex-shrink: 0;
+      transition: var(--transition);
+    }
+
+    .progress-step.active .progress-step-indicator {
+      background: var(--accent-primary);
+      box-shadow: 0 0 8px var(--accent-primary);
+      animation: pulse 1.5s infinite;
+    }
+
+    .progress-step.completed .progress-step-indicator {
+      background: var(--mealie-green);
+    }
+
+    /* Animations */
+    @keyframes pulse {
+      0% {
+        transform: scale(0.9);
+        opacity: 0.6;
+      }
+
+      50% {
+        transform: scale(1.15);
+        opacity: 1;
+      }
+
+      100% {
+        transform: scale(0.9);
+        opacity: 0.6;
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 1080px) {
+      .recipe-grid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      body {
+        flex-direction: column;
+        overflow-y: auto;
+      }
+
+      .sidebar {
+        width: 100%;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .main-content {
+        height: auto;
+        padding: 24px 16px;
+      }
+    }
   </style>
 </head>
+
 <body>
 
-  <header>
-    <div class="logo">🎬 → 🍳</div>
-    <h1>SousVid</h1>
-    <p>Paste a cooking video URL and get a structured recipe in Mealie -- automatically.</p>
-  </header>
-
-  <div class="card">
-    <div class="input-row">
-      <input
-        type="url"
-        id="urlInput"
-        placeholder="https://www.tiktok.com/@... or instagram.com/reel/..."
-        autocomplete="off"
-        spellcheck="false"
-      />
-      <button id="extractBtn" onclick="startExtract()">Extract</button>
-    </div>
-
-    <!-- Mealie push toggle -->
-    <div class="toggle-row">
-      <div class="toggle-label">
-        Push to Mealie
-        <small>Automatically save the extracted recipe to your Mealie instance</small>
+  <!-- Left Sidebar -->
+  <div class="sidebar">
+    <div class="brand">
+      <div class="brand-logo">
+        <i data-lucide="cooking-pot" style="width: 24px; height: 24px;"></i>
       </div>
-      <label class="switch" title="Toggle Mealie push">
-        <input type="checkbox" id="mealieToggle" checked />
-        <span class="slider"></span>
-      </label>
+      <div class="brand-text">
+        <h2>SousVid</h2>
+        <p>Video to Recipe Pipeline</p>
+      </div>
     </div>
 
-    <div id="status"></div>
+    <div class="input-card">
+      <label class="section-label">PASTE VIDEO URL</label>
+      <input type="url" id="urlInput" placeholder="https://instagram.com/reel/... or tiktok.com/..." autocomplete="off"
+        spellcheck="false" />
+
+      <!-- Mealie push toggle -->
+      <div class="toggle-row">
+        <div class="toggle-text">
+          <span class="toggle-title">Push to Mealie</span>
+          <span class="toggle-desc">Automatically save to Mealie</span>
+        </div>
+        <label class="switch" title="Toggle Mealie push">
+          <input type="checkbox" id="mealieToggle" checked />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <button id="extractBtn" onclick="startExtract()">Extract Recipe</button>
+    </div>
+
+    <!-- Error message area -->
     <div id="errorMsg"></div>
 
-    <!-- ── Result ── -->
-    <div id="result">
-      <div class="divider"></div>
+    <!-- Queue History -->
+    <div class="queue-container">
+      <div class="queue-header">EXTRACTION QUEUE</div>
+      <div class="queue-list" id="queueList">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
 
-      <div class="result-header">
-        <h2 id="recipeName"></h2>
-        <div class="action-buttons">
-          <button class="btn-download" id="dlJson" onclick="downloadJSON()" style="display:none">⬇ JSON</button>
-          <button class="btn-download" id="dlMd" onclick="downloadMarkdown()" style="display:none">⬇ Markdown</button>
-          <a id="mealieLink" href="#" target="_blank" rel="noopener" style="display:none">
+    <div class="sidebar-footer">
+      Supports Reels, TikTok, Shorts & 1000+ video platforms
+    </div>
+  </div>
+
+  <!-- Main Content Area -->
+  <div class="main-content">
+
+    <!-- Welcome State -->
+    <div class="welcome-state" id="welcomeState">
+      <div class="welcome-card">
+        <div class="welcome-icon">
+          <i data-lucide="chef-hat" style="width: 48px; height: 48px; stroke-width: 1.5;"></i>
+        </div>
+        <h1>Ready to Cook?</h1>
+        <p>Paste a cooking video link from Instagram, TikTok, or YouTube Shorts in the sidebar, and let AI extract a
+          clean, structured recipe for you in seconds.</p>
+        <div class="welcome-features">
+          <div class="feature-item">
+            <span class="feature-badge">✓</span>
+            <span>Automatic audio transcription & caption extraction</span>
+          </div>
+          <div class="feature-item">
+            <span class="feature-badge">✓</span>
+            <span>Weight-based culinary units prioritized</span>
+          </div>
+          <div class="feature-item">
+            <span class="feature-badge">✓</span>
+            <span>One-click import into self-hosted Mealie</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Progress State -->
+    <div id="progressState" style="display:none; animation: fadeIn 0.3s ease;">
+      <div class="progress-timeline" style="max-width: 580px; margin: 40px auto 0;">
+        <div class="queue-header" style="margin-bottom: 8px; border-bottom: none;">EXTRACTING RECIPE...</div>
+        <div class="progress-step" id="p-step-downloading">
+          <div class="progress-step-indicator"></div>
+          <span><i data-lucide="download" style="width: 14px; height: 14px; margin-right: 6px;"></i>Downloading video...</span>
+        </div>
+        <div class="progress-step" id="p-step-frames">
+          <div class="progress-step-indicator"></div>
+          <span><i data-lucide="image" style="width: 14px; height: 14px; margin-right: 6px;"></i>Extracting frames...</span>
+        </div>
+        <div class="progress-step" id="p-step-transcribing">
+          <div class="progress-step-indicator"></div>
+          <span><i data-lucide="mic" style="width: 14px; height: 14px; margin-right: 6px;"></i>Transcribing audio...</span>
+        </div>
+        <div class="progress-step" id="p-step-llm">
+          <div class="progress-step-indicator"></div>
+          <span><i data-lucide="cpu" style="width: 14px; height: 14px; margin-right: 6px;"></i>Extracting recipe with AI...</span>
+        </div>
+        <div class="progress-step" id="p-step-mealie">
+          <div class="progress-step-indicator"></div>
+          <span><i data-lucide="send" style="width: 14px; height: 14px; margin-right: 6px;"></i>Saving to Mealie...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result View -->
+    <div class="result-container" id="resultContainer" style="display:none">
+      <div class="recipe-header">
+        <h1 id="recipeName"></h1>
+        <div class="recipe-actions">
+          <button class="action-btn" onclick="downloadJSON()">⬇ JSON</button>
+          <button class="action-btn" onclick="downloadMarkdown()">⬇ Markdown</button>
+          <a class="action-btn mealie-btn" id="mealieLink" href="#" target="_blank" rel="noopener" style="display:none">
             Open in Mealie ↗
           </a>
         </div>
       </div>
 
-      <div id="mealieWarning"></div>
+      <div class="recipe-warning" id="mealieWarning"></div>
 
-      <div id="description"></div>
+      <p class="recipe-desc" id="description"></p>
 
       <div class="meta-row" id="metaRow"></div>
 
-      <!-- Ingredients -->
-      <div id="ingredientsSection">
-        <div class="section-title">Ingredients</div>
-        <ul id="ingredientsList"></ul>
+      <div class="recipe-grid">
+        <!-- Ingredients -->
+        <div class="column-ingredients">
+          <h3 class="column-title">INGREDIENTS</h3>
+          <div class="ingredients-list" id="ingredientsList"></div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="column-instructions">
+          <h3 class="column-title">INSTRUCTIONS</h3>
+          <div class="instructions-list" id="instructionsList"></div>
+        </div>
       </div>
 
-      <!-- Instructions -->
-      <div id="instructionsSection">
-        <div class="section-title">Instructions</div>
-        <ol id="instructionsList"></ol>
-      </div>
-
-      <!-- Keywords -->
-      <div id="keywordsSection" style="display:none">
-        <div class="section-title">Tags</div>
-        <div id="keywordsList"></div>
+      <!-- Keywords / Tags -->
+      <div class="tags-section" id="keywordsSection" style="display:none">
+        <h3 class="column-title">Tags</h3>
+        <div class="tags-list" id="keywordsList"></div>
       </div>
 
       <!-- Raw transcript -->
       <details id="transcriptDetails" style="display:none">
-        <summary>🎙️ View raw transcript</summary>
+        <summary>View raw transcript & debug logs</summary>
         <div id="transcriptText"></div>
       </details>
     </div>
 
-    <div class="platforms">
-      Supports: TikTok · Instagram Reels · YouTube Shorts · and 1000+ more via yt-dlp
-    </div>
   </div>
 
   <script>
-    const STEPS_WITH_MEALIE = [
-      "⬇️  Downloading video...",
-      "🖼️  Extracting frames...",
-      "🎤  Transcribing audio...",
-      "🤖  Extracting recipe with AI...",
-      "📬  Saving to Mealie...",
-    ];
-    const STEPS_NO_MEALIE = [
-      "⬇️  Downloading video...",
-      "🖼️  Extracting frames...",
-      "🎤  Transcribing audio...",
-      "🤖  Extracting recipe with AI...",
-      "✨  Finishing up...",
-    ];
-    let stepInterval = null;
-    let stepIndex = 0;
+    // Local history state
+    let extractionHistory = [];
+    let activeJobId = null;
+    let activeInterval = null;
+    let _lastData = null;
 
-    function setStatus(msg, showSpinner = true) {
-      const el = document.getElementById("status");
-      el.innerHTML = showSpinner
-        ? `<div class="spinner"></div><span>${msg}</span>`
-        : `<span>${msg}</span>`;
+    // Load history from localStorage on startup
+    (function initHistory() {
+      try {
+        const stored = localStorage.getItem("sousvid_history");
+        if (stored) {
+          extractionHistory = JSON.parse(stored);
+        }
+      } catch (e) {
+        console.error("Failed to load history", e);
+      }
+      renderQueueList();
+      if (typeof lucide !== "undefined") {
+        lucide.createIcons();
+      }
+    })();
+
+    function saveHistory() {
+      try {
+        localStorage.setItem("sousvid_history", JSON.stringify(extractionHistory));
+      } catch (e) {
+        console.error("Failed to save history", e);
+      }
+      renderQueueList();
     }
 
-    function clearStatus() {
-      document.getElementById("status").innerHTML = "";
+    function detectPlatform(url) {
+      if (!url) return "VIDEO";
+      const u = url.toLowerCase();
+      if (u.includes("instagram.com")) return "INSTAGRAM REEL";
+      if (u.includes("tiktok.com")) return "TIKTOK";
+      if (u.includes("youtube.com") || u.includes("youtu.be")) return "YOUTUBE SHORTS";
+      return "WEB VIDEO";
+    }
+
+    function renderQueueList() {
+      const listEl = document.getElementById("queueList");
+      listEl.innerHTML = "";
+
+      if (extractionHistory.length === 0) {
+        listEl.innerHTML = `<div style="font-size: 0.8rem; color: var(--text-muted); text-align: center; padding: 24px 0;">No past extractions</div>`;
+        return;
+      }
+
+      // Render descending (newest first)
+      extractionHistory.forEach((item, idx) => {
+        const itemCard = document.createElement("div");
+        itemCard.className = `queue-item ${activeJobId === item.job_id || (_lastData && _lastData.job_id === item.job_id) ? 'active' : ''}`;
+
+        // Setup click on card to view
+        itemCard.addEventListener("click", (e) => {
+          // Avoid click if clicking delete button
+          if (e.target.closest(".delete-btn")) return;
+          selectHistoryItem(item.job_id);
+        });
+
+        // Status text and style class
+        let statusLabel = item.status.toUpperCase();
+        let statusClass = item.status;
+        if (item.status === "running" && item.step) {
+          statusLabel = item.step;
+        }
+
+        itemCard.innerHTML = `
+          <div class="item-header">
+            <span class="item-badge">${detectPlatform(item.url)}</span>
+            <span class="item-status ${statusClass}">${statusLabel}</span>
+          </div>
+          <div class="item-title">${item.recipeName || item.url}</div>
+          <button class="delete-btn" title="Remove from history" onclick="removeHistoryItem('${item.job_id}')">×</button>
+        `;
+        listEl.appendChild(itemCard);
+      });
+    }
+
+    function selectHistoryItem(jobId) {
+      const item = extractionHistory.find(i => i.job_id === jobId);
+      if (!item) return;
+
+      // Highlight active in list
+      _lastData = item.result;
+      if (_lastData) {
+        _lastData.job_id = jobId; // ensure reference
+        renderRecipe(_lastData);
+      }
+      renderQueueList();
+    }
+
+    function removeHistoryItem(jobId) {
+      extractionHistory = extractionHistory.filter(i => i.job_id !== jobId);
+      saveHistory();
+
+      // If we deleted the currently active view, go back to welcome
+      if (_lastData && _lastData.job_id === jobId) {
+        _lastData = null;
+        document.getElementById("resultContainer").style.display = "none";
+        document.getElementById("welcomeState").style.display = "flex";
+      }
     }
 
     function showError(msg) {
       const el = document.getElementById("errorMsg");
-      el.textContent = "⚠️ " + msg;
+      el.textContent = "Error: " + msg;
       el.style.display = "block";
     }
 
@@ -527,19 +1182,57 @@
       el.style.display = "none";
     }
 
-    function startProgressLoop() {
-      const pushToMealie = document.getElementById("mealieToggle").checked;
-      const STEPS = pushToMealie ? STEPS_WITH_MEALIE : STEPS_NO_MEALIE;
-      stepIndex = 0;
-      setStatus(STEPS[0]);
-      stepInterval = setInterval(() => {
-        stepIndex = Math.min(stepIndex + 1, STEPS.length - 1);
-        setStatus(STEPS[stepIndex]);
-      }, 18000); // ~18s per step -- rough estimate
+    // Interactive Checklist handlers
+    function toggleIngredient(element) {
+      element.classList.toggle("completed");
     }
 
-    function stopProgressLoop() {
-      if (stepInterval) { clearInterval(stepInterval); stepInterval = null; }
+    function toggleInstruction(element) {
+      element.classList.toggle("done");
+
+      // Look for the next instruction step to highlight it
+      const parent = element.parentElement;
+      const allSteps = Array.from(parent.children);
+      const currentIdx = allSteps.indexOf(element);
+
+      // Reset upcoming/active classes for remaining steps
+      allSteps.forEach((step, idx) => {
+        if (idx <= currentIdx) {
+          // Already done or current clicked one
+          if (step.classList.contains("done")) {
+            step.classList.remove("upcoming", "active");
+          }
+        } else {
+          // Future steps
+          step.classList.remove("done", "active");
+          step.classList.add("upcoming");
+        }
+      });
+
+      // Find first upcoming step and mark it active
+      const firstUpcoming = allSteps.find((step, idx) => idx > currentIdx && !step.classList.contains("done"));
+      if (firstUpcoming) {
+        firstUpcoming.classList.remove("upcoming");
+        firstUpcoming.classList.add("active");
+      }
+    }
+
+    function updateProgressSteps(step) {
+      // Steps order: downloading -> frames -> transcribing -> llm -> mealie
+      const steps = ["downloading", "frames", "transcribing", "llm", "mealie"];
+      const currentIdx = steps.indexOf(step);
+
+      steps.forEach((s, idx) => {
+        const el = document.getElementById(`p-step-${s}`);
+        if (!el) return;
+
+        el.className = "progress-step";
+        if (idx < currentIdx) {
+          el.classList.add("completed");
+        } else if (idx === currentIdx) {
+          el.classList.add("active");
+        }
+      });
     }
 
     function formatDuration(iso) {
@@ -554,26 +1247,31 @@
       return parts.join(" ") || iso;
     }
 
-    function renderResult(data) {
+    function renderRecipe(data) {
       const recipe = data.recipe;
+
+      document.getElementById("welcomeState").style.display = "none";
+      document.getElementById("progressState").style.display = "none";
 
       document.getElementById("recipeName").textContent = recipe.name || "Untitled Recipe";
 
       // Mealie link or warning
       const mealieWarning = document.getElementById("mealieWarning");
-      if (data.mealie_url) {
-        const link = document.getElementById("mealieLink");
-        link.href = data.mealie_url;
-        link.style.display = "inline-flex";
-        mealieWarning.style.display = "none";
-      } else if (data.mealie_warning) {
-        mealieWarning.textContent = "⚠️ Mealie upload failed (recipe extracted successfully): " + data.mealie_warning;
-        mealieWarning.style.display = "block";
-      }
+      const mealieLink = document.getElementById("mealieLink");
 
-      // Show download buttons
-      document.getElementById("dlJson").style.display = "inline-flex";
-      document.getElementById("dlMd").style.display = "inline-flex";
+      if (data.mealie_url) {
+        mealieLink.href = data.mealie_url;
+        mealieLink.style.display = "inline-flex";
+        mealieWarning.style.display = "none";
+      } else {
+        mealieLink.style.display = "none";
+        if (data.mealie_warning) {
+          mealieWarning.textContent = "Mealie upload failed: " + data.mealie_warning;
+          mealieWarning.style.display = "block";
+        } else {
+          mealieWarning.style.display = "none";
+        }
+      }
 
       // Description
       const desc = document.getElementById("description");
@@ -587,46 +1285,61 @@
       // Meta pills
       const metaRow = document.getElementById("metaRow");
       metaRow.innerHTML = "";
+      const icons = {
+        Yield: `<i data-lucide="users" style="width: 14px; height: 14px; margin-right: 4px;"></i>`,
+        Prep: `<i data-lucide="clock" style="width: 14px; height: 14px; margin-right: 4px;"></i>`,
+        Cook: `<i data-lucide="flame" style="width: 14px; height: 14px; margin-right: 4px;"></i>`,
+        Total: `<i data-lucide="hourglass" style="width: 14px; height: 14px; margin-right: 4px;"></i>`
+      };
       const metas = [
-        { label: "Yield",  value: recipe.recipeYield },
-        { label: "Prep",   value: formatDuration(recipe.prepTime) },
-        { label: "Cook",   value: formatDuration(recipe.cookTime) },
-        { label: "Total",  value: formatDuration(recipe.totalTime) },
+        { label: "Yield", value: recipe.recipeYield, key: "Yield" },
+        { label: "Prep", value: formatDuration(recipe.prepTime), key: "Prep" },
+        { label: "Cook", value: formatDuration(recipe.cookTime), key: "Cook" },
+        { label: "Total", value: formatDuration(recipe.totalTime), key: "Total" },
       ];
       metas.filter(m => m.value).forEach(m => {
-        metaRow.innerHTML += `<div class="meta-pill">${m.label}: <span>${m.value}</span></div>`;
+        metaRow.innerHTML += `<div class="meta-pill">${icons[m.key]}<span>${m.label}:</span> <span>${m.value}</span></div>`;
       });
 
-      // Ingredients
+      // Ingredients Checklist
       const ingList = document.getElementById("ingredientsList");
       ingList.innerHTML = "";
       (recipe.recipeIngredient || []).forEach(ing => {
-        const li = document.createElement("li");
-        li.textContent = ing;
-        ingList.appendChild(li);
+        const row = document.createElement("div");
+        row.className = "ing-row";
+        row.onclick = () => toggleIngredient(row);
+        row.innerHTML = `
+          <div class="ing-checkbox"></div>
+          <div class="ing-text">${ing}</div>
+        `;
+        ingList.appendChild(row);
       });
-      document.getElementById("ingredientsSection").style.display =
+      document.getElementById("ingredientsList").parentElement.style.display =
         recipe.recipeIngredient?.length ? "block" : "none";
 
-      // Instructions
+      // Instructions Step-by-Step
       const insList = document.getElementById("instructionsList");
       insList.innerHTML = "";
       (recipe.recipeInstructions || []).forEach((step, i) => {
-        const li = document.createElement("li");
-        li.innerHTML = `
-          <div class="step-num">${i + 1}</div>
-          <div class="step-text">${step.text}</div>`;
-        insList.appendChild(li);
+        const card = document.createElement("div");
+        // Step 1 is active by default, others upcoming
+        card.className = `step-card ${i === 0 ? 'active' : 'upcoming'}`;
+        card.onclick = () => toggleInstruction(card);
+        card.innerHTML = `
+          <div class="step-badge">${i + 1}</div>
+          <div class="step-text">${step.text}</div>
+        `;
+        insList.appendChild(card);
       });
-      document.getElementById("instructionsSection").style.display =
+      document.getElementById("instructionsList").parentElement.style.display =
         recipe.recipeInstructions?.length ? "block" : "none";
 
-      // Keywords
+      // Keywords / Tags
       const kwList = document.getElementById("keywordsList");
       kwList.innerHTML = "";
       if (recipe.keywords?.length) {
         recipe.keywords.forEach(kw => {
-          kwList.innerHTML += `<span class="keyword">${kw}</span>`;
+          kwList.innerHTML += `<span class="tag-pill">${kw}</span>`;
         });
         document.getElementById("keywordsSection").style.display = "block";
       } else {
@@ -637,49 +1350,141 @@
       if (data.transcript) {
         document.getElementById("transcriptText").textContent = data.transcript;
         document.getElementById("transcriptDetails").style.display = "block";
+      } else {
+        document.getElementById("transcriptDetails").style.display = "none";
       }
 
-      document.getElementById("result").style.display = "block";
+      if (typeof lucide !== "undefined") {
+        lucide.createIcons();
+      }
+
+      document.getElementById("resultContainer").style.display = "block";
     }
 
     async function startExtract() {
-      const url = document.getElementById("urlInput").value.trim();
+      const urlInput = document.getElementById("urlInput");
+      const url = urlInput.value.trim();
       if (!url) {
         showError("Please enter a video URL.");
         return;
       }
 
       clearError();
-      document.getElementById("result").style.display = "none";
-      document.getElementById("extractBtn").disabled = true;
-      startProgressLoop();
+      document.getElementById("welcomeState").style.display = "none";
+      document.getElementById("resultContainer").style.display = "none";
+
+      // Clear progress step visuals
+      updateProgressSteps("downloading");
+      document.getElementById("progressState").style.display = "block";
+
+      const extractBtn = document.getElementById("extractBtn");
+      extractBtn.disabled = true;
+
+      // Put item in queue history as running
+      const tempJobId = "temp-" + Date.now();
+      const historyItem = {
+        job_id: tempJobId,
+        url: url,
+        recipeName: "Extracting recipe...",
+        status: "running",
+        step: "downloading",
+        timestamp: Date.now()
+      };
+      extractionHistory.unshift(historyItem);
+      activeJobId = tempJobId;
+      saveHistory();
 
       try {
         const pushToMealie = document.getElementById("mealieToggle").checked;
-        const resp = await fetch("/extract", {
+
+        // 1. Submit the job
+        const submitResp = await fetch("/extract/submit", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ url, push_to_mealie: pushToMealie }),
         });
+        if (!submitResp.ok) {
+          const err = await submitResp.json().catch(() => ({ detail: submitResp.statusText }));
+          throw new Error(err.detail || "Failed to submit job.");
+        }
+        const { job_id } = await submitResp.json();
 
-        stopProgressLoop();
-
-        if (!resp.ok) {
-          const err = await resp.json().catch(() => ({ detail: resp.statusText }));
-          throw new Error(err.detail || "Extraction failed.");
+        // Swap the temp job_id in history with the real one
+        const activeIdx = extractionHistory.findIndex(i => i.job_id === tempJobId);
+        if (activeIdx !== -1) {
+          extractionHistory[activeIdx].job_id = job_id;
+          activeJobId = job_id;
+          saveHistory();
         }
 
-        const data = await resp.json();
-        _lastData = data;
-        setStatus("✅ Done!", false);
-        renderResult(data);
+        // 2. Poll every 2s until complete
+        await new Promise((resolve, reject) => {
+          activeInterval = setInterval(async () => {
+            try {
+              const pollResp = await fetch(`/jobs/${job_id}`);
+              if (!pollResp.ok) {
+                clearInterval(activeInterval);
+                reject(new Error("Polling failed."));
+                return;
+              }
+              const { status, step, result, error } = await pollResp.json();
+
+              // Update history status
+              const idx = extractionHistory.findIndex(i => i.job_id === job_id);
+              if (idx !== -1) {
+                extractionHistory[idx].status = status;
+                extractionHistory[idx].step = step || "running";
+                if (status === "done" && result && result.recipe) {
+                  extractionHistory[idx].recipeName = result.recipe.name;
+                  extractionHistory[idx].result = result;
+                }
+                saveHistory();
+              }
+
+              if (status === "running" && step) {
+                updateProgressSteps(step);
+              }
+
+              if (status === "done") {
+                clearInterval(activeInterval);
+                activeJobId = null;
+                _lastData = result;
+                _lastData.job_id = job_id; // hold reference
+                renderRecipe(result);
+                saveHistory();
+                urlInput.value = ""; // clear input on success
+                resolve();
+              } else if (status === "failed") {
+                clearInterval(activeInterval);
+                activeJobId = null;
+                if (idx !== -1) {
+                  extractionHistory[idx].recipeName = "Failed Extraction";
+                  saveHistory();
+                }
+                reject(new Error(error || "Extraction failed."));
+              }
+            } catch (e) {
+              clearInterval(activeInterval);
+              activeJobId = null;
+              reject(e);
+            }
+          }, 2000);
+        });
 
       } catch (err) {
-        stopProgressLoop();
-        clearStatus();
+        // Mark active as failed
+        const idx = extractionHistory.findIndex(i => i.job_id === activeJobId);
+        if (idx !== -1) {
+          extractionHistory[idx].status = "failed";
+          extractionHistory[idx].recipeName = "Failed Extraction";
+          saveHistory();
+        }
+        activeJobId = null;
+        document.getElementById("progressState").style.display = "none";
+        document.getElementById("welcomeState").style.display = "flex";
         showError(err.message);
       } finally {
-        document.getElementById("extractBtn").disabled = false;
+        extractBtn.disabled = false;
       }
     }
 
@@ -688,23 +1493,17 @@
       if (e.key === "Enter") startExtract();
     });
 
-    // ── Share-sheet pre-fill ──────────────────────────────────
-    // When arriving via GET /share?url=..., the server redirects to /?url=...
-    // We pick that up here and auto-populate (and auto-submit) the form.
+    // Share-sheet handler prefill
     (function handleShareParam() {
       const params = new URLSearchParams(window.location.search);
       const sharedUrl = params.get("url");
       if (!sharedUrl) return;
       document.getElementById("urlInput").value = sharedUrl;
-      // Clean the ?url= from the address bar without reloading
       history.replaceState(null, "", "/");
-      // Auto-submit so the user gets the result with one tap
       startExtract();
     })();
 
-    // ── Downloads ────────────────────────────────────────────
-    let _lastData = null;
-
+    // Download helpers
     function _triggerDownload(content, filename, mime) {
       const blob = new Blob([content], { type: mime });
       const url = URL.createObjectURL(blob);
@@ -723,18 +1522,17 @@
       if (!_lastData) return;
       const r = _lastData.recipe;
 
-      // Build a fully schema.org/Recipe compliant object
       const schemaRecipe = {
         "@context": "https://schema.org",
         "@type": "Recipe",
         "name": r.name,
       };
-      if (r.description)      schemaRecipe.description     = r.description;
-      if (r.recipeYield)      schemaRecipe.recipeYield     = r.recipeYield;
-      if (r.prepTime)         schemaRecipe.prepTime        = r.prepTime;
-      if (r.cookTime)         schemaRecipe.cookTime        = r.cookTime;
-      if (r.totalTime)        schemaRecipe.totalTime       = r.totalTime;
-      if (r.keywords?.length) schemaRecipe.keywords        = r.keywords.join(", ");
+      if (r.description) schemaRecipe.description = r.description;
+      if (r.recipeYield) schemaRecipe.recipeYield = r.recipeYield;
+      if (r.prepTime) schemaRecipe.prepTime = r.prepTime;
+      if (r.cookTime) schemaRecipe.cookTime = r.cookTime;
+      if (r.totalTime) schemaRecipe.totalTime = r.totalTime;
+      if (r.keywords?.length) schemaRecipe.keywords = r.keywords.join(", ");
 
       if (r.recipeIngredient?.length) {
         schemaRecipe.recipeIngredient = r.recipeIngredient;
@@ -743,7 +1541,7 @@
       if (r.recipeInstructions?.length) {
         schemaRecipe.recipeInstructions = r.recipeInstructions.map(s => {
           const step = { "@type": "HowToStep", "text": s.text };
-          if (s.title) step.name = s.title;  // 'name' is the schema.org property for step title
+          if (s.title) step.name = s.title;
           return step;
         });
       }
@@ -765,9 +1563,9 @@
 
       const metas = [];
       if (r.recipeYield) metas.push(`**Yield:** ${r.recipeYield}`);
-      if (r.prepTime)    metas.push(`**Prep:** ${r.prepTime}`);
-      if (r.cookTime)    metas.push(`**Cook:** ${r.cookTime}`);
-      if (r.totalTime)   metas.push(`**Total:** ${r.totalTime}`);
+      if (r.prepTime) metas.push(`**Prep:** ${formatDuration(r.prepTime)}`);
+      if (r.cookTime) metas.push(`**Cook:** ${formatDuration(r.cookTime)}`);
+      if (r.totalTime) metas.push(`**Total:** ${formatDuration(r.totalTime)}`);
       if (metas.length) { lines.push(metas.join(" · ")); lines.push(""); }
 
       if (r.recipeIngredient?.length) {
@@ -790,4 +1588,5 @@
     }
   </script>
 </body>
+
 </html>

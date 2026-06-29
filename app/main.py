@@ -2,24 +2,21 @@
 main.py -- FastAPI application entry point for SousVid.
 
 Endpoints:
-    GET  /          -> Web UI
-    GET  /health    -> Liveness and readiness check
-    GET  /share     -> Mobile share-sheet redirect (pre-fills the UI with ?url=)
-    POST /extract   -> Run the recipe extraction pipeline"""
-import asyncio
+    GET  /                -> Web UI
+    GET  /health          -> Liveness and readiness check
+    GET  /share           -> Mobile share-sheet redirect (pre-fills the UI with ?url=)
+    POST /extract/submit  -> Enqueue a recipe extraction job and return a job ID
+    GET  /jobs/{job_id}   -> Poll the status/result of a submitted job"""
 import logging
-from concurrent.futures import ThreadPoolExecutor
-from contextlib import asynccontextmanager
 
+from celery.result import AsyncResult
 from fastapi import FastAPI, HTTPException, Query, Request
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
-from app.errors import DownloadError, ExtractionError, SousVidError
-from app.models import ExtractRequest, ExtractResponse
-from app.pipeline import run_pipeline
-from app.transcriber import get_model
+from app.models import ExtractRequest, JobStatusResponse, JobSubmitResponse
+from app.worker import celery_app, extract_task
 
 logging.basicConfig(
     level=logging.INFO,
@@ -31,27 +28,10 @@ logging.getLogger("faster_whisper").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
-# Single-worker executor: Whisper is not thread-safe for concurrent inference,
-# and video processing is CPU-bound anyway, so parallelism doesn't help here.
-executor = ThreadPoolExecutor(max_workers=1)
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Pre-load the Whisper model at startup so the first request isn't slow."""
-    logger.info("Pre-loading Whisper model...")
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(executor, get_model)
-    logger.info("Ready.")
-    yield
-    executor.shutdown(wait=False)
-
-
 app = FastAPI(
     title="SousVid",
     description="Convert cooking videos from Instagram, TikTok, and YouTube into Mealie recipes.",
     version="1.0.0",
-    lifespan=lifespan,
 )
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -100,14 +80,8 @@ def health():
     Reports the status of each subsystem so you can tell at a glance whether
     the app is fully operational or missing configuration.
     """
-    from app.transcriber import _model as whisper_model
     return {
         "status": "ok",
-        "whisper": {
-            "loaded": whisper_model is not None,
-            "model": settings.whisper_model,
-            "device": settings.whisper_device,
-        },
         "mealie": {
             "configured": settings.mealie_configured,
             "url": settings.mealie_url or None,
@@ -115,39 +89,39 @@ def health():
         "llm": {
             "model": settings.openrouter_model,
         },
+        "queue": {
+            "broker": settings.redis_url,
+        },
     }
 
 
-@app.post("/extract", response_model=ExtractResponse, tags=["Recipe"])
-async def extract(request: ExtractRequest):
-    """
-    Submit a cooking video URL and receive a structured recipe.
-
-    The recipe is automatically pushed to Mealie if the Mealie toggle is enabled
-    and Mealie is configured. Processing typically takes 30-120 seconds depending
-    on video length and Whisper model size.
-    """
+@app.post("/extract/submit", response_model=JobSubmitResponse, tags=["Recipe"])
+async def submit_extract(request: ExtractRequest):
+    """Enqueue a recipe extraction job and return a job ID immediately."""
     logger.info(
-        f"Extract request: {request.url!r} "
+        f"Enqueuing extract job: {request.url!r} "
         f"(push_to_mealie={request.push_to_mealie})"
     )
-    try:
-        loop = asyncio.get_event_loop()
-        result: ExtractResponse = await loop.run_in_executor(
-            executor,
-            lambda: run_pipeline(request.url, push_to_mealie=request.push_to_mealie),
-        )
-        return result
+    task = extract_task.delay(str(request.url), request.push_to_mealie)
+    return JobSubmitResponse(job_id=task.id)
 
-    except DownloadError as exc:
-        raise HTTPException(status_code=422, detail=str(exc))
-    except ExtractionError as exc:
-        raise HTTPException(status_code=422, detail=str(exc))
-    except SousVidError as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
-    except Exception as exc:
-        logger.exception("Unexpected pipeline error")
-        raise HTTPException(
-            status_code=500,
-            detail="An unexpected error occurred. Check the container logs for details.",
-        )
+
+@app.get("/jobs/{job_id}", response_model=JobStatusResponse, tags=["Recipe"])
+async def job_status(job_id: str):
+    """
+    Poll the status of a previously submitted extraction job.
+
+    States: queued | running | done | failed
+    """
+    result = AsyncResult(job_id, app=celery_app)
+    if result.state == "PENDING":
+        return JobStatusResponse(status="queued")
+    if result.state == "STARTED":
+        return JobStatusResponse(status="running", step="starting")
+    if result.state == "PROGRESS":
+        return JobStatusResponse(status="running", step=result.info.get("step"))
+    if result.state == "SUCCESS":
+        return JobStatusResponse(status="done", result=result.result)
+    if result.state == "FAILURE":
+        return JobStatusResponse(status="failed", error=str(result.info))
+    return JobStatusResponse(status=result.state.lower())

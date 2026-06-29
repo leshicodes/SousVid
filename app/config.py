@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     max_frames: int = 6
     cookies_file: str = "/app/cookies/cookies.txt"
 
+    # -- Redis / Celery --------------------------------------------------------
+    redis_url: str = "redis://redis:6379/0"
+
     # -- Derived properties --------------------------------------------------
 
     @property

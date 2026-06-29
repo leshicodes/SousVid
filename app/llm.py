@@ -45,7 +45,7 @@ Return a single JSON object with these fields (omit a field only if truly undete
 {{
   "name": "string -- recipe name",
   "description": "string -- 1-2 sentence summary",
-  "recipeIngredient": ["array of strings, each formatted as 'quantity unit ingredient', e.g. '2 cups all-purpose flour'"],
+  "recipeIngredient": ["array of strings formatted as 'quantity unit ingredient'. For solid/dry ingredients prefer grams (g) -- e.g. '250 g flour', '15 g butter'. For liquids, use fl oz or cups -- e.g. '8 fl oz water', '1 cup heavy cream'. Use volumetric or descriptive units only when weight is truly impractical (e.g. 'a pinch of salt', '1 clove garlic', 'to taste')."],
   "recipeInstructions": [{{"text": "string -- one discrete step"}}],
   "recipeYield": "string -- e.g. '4 servings'",
   "prepTime": "ISO 8601 duration, e.g. 'PT10M'",
@@ -63,6 +63,7 @@ def _normalize_instructions(raw: list) -> list[RecipeInstruction]:
         elif isinstance(step, dict):
             text = (
                 step.get("text")
+                or step.get("text_content")  # some models use this key
                 or step.get("description")
                 or step.get("name")
                 or str(step)

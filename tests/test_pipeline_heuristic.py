@@ -4,7 +4,6 @@ test_pipeline_heuristic.py -- Tests for _description_looks_like_recipe().
 These document the intentional behavior of the heuristic and guard against
 accidental changes to the thresholds.
 """
-import pytest
 
 from app.pipeline import _description_looks_like_recipe
 

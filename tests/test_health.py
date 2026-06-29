@@ -2,14 +2,17 @@
 test_health.py -- Tests for the /health endpoint.
 
 Uses FastAPI's TestClient (backed by httpx) so no running server is needed.
-The Whisper model is not loaded in tests; we just verify the response shape.
+We just verify the response shape.
 """
 import os
 
-import pytest
 
-# Set required env var before the app imports config
+# Set required env var before the app imports config.
+# Force Mealie to be unconfigured so the test assertions are deterministic
+# regardless of any local .env file.
 os.environ.setdefault("OPENROUTER_API_KEY", "test-key-for-tests")
+os.environ["MEALIE_URL"] = ""
+os.environ["MEALIE_API_TOKEN"] = ""
 
 from fastapi.testclient import TestClient
 
@@ -27,17 +30,15 @@ def test_health_response_shape():
     response = client.get("/health")
     data = response.json()
     assert data["status"] == "ok"
-    assert "whisper" in data
     assert "mealie" in data
     assert "llm" in data
+    assert "queue" in data
 
 
-def test_health_whisper_section():
+def test_health_queue_section():
     response = client.get("/health")
-    whisper = response.json()["whisper"]
-    assert "loaded" in whisper
-    assert "model" in whisper
-    assert "device" in whisper
+    queue = response.json()["queue"]
+    assert "broker" in queue
 
 
 def test_health_mealie_section():

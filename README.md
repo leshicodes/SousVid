@@ -47,17 +47,20 @@ flowchart TD
 | Component | Technology |
 |---|---|
 | API & orchestration | Python 3.12 - FastAPI |
+| Asynchronous Queue | Celery + Redis |
 | Video download | [yt-dlp](https://github.com/yt-dlp/yt-dlp) |
 | Frame extraction | ffmpeg |
 | Transcription | [faster-whisper](https://github.com/SYSTRAN/faster-whisper) (local, no cost) |
 | Recipe extraction | [OpenRouter](https://openrouter.ai) (multimodal LLM) |
 | Recipe output | schema.org/Recipe JSON + Markdown |
 | Recipe manager | [Mealie](https://mealie.io) (self-hosted, optional) |
-| Frontend | Vanilla HTML/CSS/JS |
+| Frontend | Vanilla HTML/CSS/JS (Lucide icons) |
 
 ---
 
 ## Architecture
+
+SousVid utilizes an asynchronous architecture to handle processing without blocking requests:
 
 ```mermaid
 flowchart LR
@@ -65,22 +68,25 @@ flowchart LR
         UI["index.html"]
     end
 
-    subgraph Container["Docker Container"]
-        direction TB
-        Main["main.py\nFastAPI"]
-        Config["config.py\nSettings"]
-        Pipeline["pipeline.py\norchestration"]
-
-        subgraph Modules["Pipeline Modules"]
-            DL["downloader.py\nyt-dlp"]
-            FE["frame_extractor.py\nffmpeg"]
-            TR["transcriber.py\nfaster-whisper"]
-            LLM["llm.py\nOpenRouter SDK"]
-            ME["mealie.py\nhttpx"]
+    subgraph Docker["Docker Container Space"]
+        subgraph FastAPIApp["sousvid container"]
+            Main["main.py\nFastAPI"]
+            Config["config.py\nSettings"]
+        end
+        
+        subgraph Queue["redis container"]
+            Redis[("Redis\nBroker & Backend")]
         end
 
-        Models["models.py\nPydantic"]
-        Errors["errors.py\nexceptions"]
+        subgraph Worker["worker container"]
+            Celery["worker.py\nCelery Worker"]
+            Pipeline["pipeline.py\nOrchestration"]
+            DL["downloader.py"]
+            FE["frame_extractor.py"]
+            TR["transcriber.py"]
+            LLM["llm.py"]
+            ME["mealie.py"]
+        end
     end
 
     subgraph External["External Services"]
@@ -89,17 +95,21 @@ flowchart LR
         Mealie[("Mealie\nself-hosted")]
     end
 
-    UI <-->|"POST /extract"| Main
-    Main --> Pipeline
-    Config -.->|"settings"| DL & FE & TR & LLM & ME
+    UI -->|"POST /extract/submit"| Main
+    UI <-->|"GET /jobs/{id}"| Main
+    Main -->|"enqueue task"| Redis
+    Celery -->|"consume / poll"| Redis
+    Celery --> Pipeline
     Pipeline --> DL & FE & TR & LLM & ME
-    Models -.-> Main & LLM & ME
-    Errors -.-> DL & LLM & Pipeline
 
     DL <-->|"download"| Platforms
     LLM <-->|"REST"| OR
     ME <-->|"REST"| Mealie
 ```
+
+For more detailed sequence diagrams and worker configuration details, see [Job Queue Architecture](docs/job_queue.md).
+
+---
 
 ---
 
@@ -181,14 +191,14 @@ When a recipe is pushed to Mealie:
 GET /health
 ```
 
-Returns the status of each subsystem (Whisper loaded, Mealie configured, LLM model in use):
+Returns the status of each subsystem (Mealie configured, LLM model in use, queue broker):
 
 ```json
 {
   "status": "ok",
-  "whisper": { "loaded": true, "model": "small", "device": "cpu" },
   "mealie": { "configured": true, "url": "http://mealie:9925" },
-  "llm": { "model": "google/gemini-flash-1.5" }
+  "llm": { "model": "google/gemini-flash-1.5" },
+  "queue": { "broker": "redis://redis:6379/0" }
 }
 ```
 
@@ -239,8 +249,9 @@ ruff check app/ tests/
 - [x] Typed exception hierarchy
 - [x] Extended `/health` endpoint with subsystem status
 - [ ] Mealie tag support -- tags need to exist in Mealie before they can be referenced
-- [ ] Job queue -- the `/extract` endpoint blocks for up to ~90s; Celery + Redis would enable concurrent extractions and progress polling
+- [x] Job queue -- Celery + Redis enabled concurrent extractions and progress polling
 - [x] Mobile share sheet -- a `/share` endpoint compatible with iOS/Android share sheets
 - [ ] Batch import -- accept a list of URLs and process sequentially
 - [ ] Cookie auto-refresh warning -- detect expired Instagram cookies and surface a clear UI message
 - [ ] GPU support -- Dockerfile is CPU-only; add a CUDA variant for Nvidia GPU acceleration
+- [ ] Mealie -- automatically try to get a recipe photo from the video (would be nice if it was cut and optimized for web viewing)

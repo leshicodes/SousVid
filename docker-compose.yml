@@ -8,20 +8,38 @@ services:
     env_file:
       - .env
     volumes:
-      # Whisper model files are cached here across container restarts.
-      # The first run will download the model (~500MB for 'small'); subsequent
-      # runs start instantly.
-      - whisper-cache:/root/.cache/huggingface
-      # Place cookies.txt here for Instagram Reels support.
-      # See .env.example and README for export instructions.
       - ./cookies:/app/cookies
+    depends_on:
+      - redis
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s  # allow time for Whisper model download on first run
+      start_period: 15s
+
+  worker:
+    build: .
+    container_name: sousvid-worker
+    command: celery -A app.worker.celery_app worker --loglevel=info
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - whisper-cache:/root/.cache/huggingface
+      - ./cookies:/app/cookies
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    container_name: sousvid-redis
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
 
 volumes:
   whisper-cache:
+    driver: local
+  redis-data:
     driver: local

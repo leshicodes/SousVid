@@ -31,3 +31,14 @@ class ExtractResponse(BaseModel):
     mealie_slug: Optional[str] = None
     mealie_warning: Optional[str] = None  # set if Mealie upload failed (non-fatal)
     transcript: Optional[str] = None  # included for debugging
+
+
+class JobSubmitResponse(BaseModel):
+    job_id: str
+
+
+class JobStatusResponse(BaseModel):
+    status: str
+    step: Optional[str] = None
+    result: Optional[dict] = None
+    error: Optional[str] = None

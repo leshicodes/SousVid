@@ -18,7 +18,6 @@ import os
 import shutil
 
 from app.downloader import download_video
-from app.errors import SousVidError
 from app.frame_extractor import extract_frames
 from app.llm import extract_recipe
 from app.mealie import post_to_mealie
@@ -37,9 +36,11 @@ def _description_looks_like_recipe(text: str | None) -> bool:
     has_ingredient_keyword = "ingredient" in text_lower
 
     measurement_words = [
-        "tbsp", "tsp", "cup", "cups", "grams", "oz", "tablespoon",
+        "tbsp", "tsp", "cup", "gram", "oz", "tablespoon",
         "teaspoon", "ml", "lb", "kg",
     ]
+    # The trailing-'s' check covers plurals (e.g. "cups" / "grams") without
+    # double-counting them against their singular form.
     measurement_count = sum(
         1 for word in measurement_words
         if f" {word}" in text_lower or f"{word} " in text_lower or f"{word}s" in text_lower
