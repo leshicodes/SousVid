@@ -1,4 +1,4 @@
-# 🎬 → 🍳 SousVid
+# SousVid
 
 Turn cooking videos from Instagram Reels, TikTok, and YouTube Shorts into structured written recipes by pasting a link
 
