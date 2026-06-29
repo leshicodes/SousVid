@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SousVid</title>
+  <meta name="description" content="Convert cooking videos from Instagram, TikTok, and YouTube into structured Mealie recipes." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0f14;
+      --surface:   #161920;
+      --surface2:  #1e2229;
+      --border:    #2a2f3a;
+      --accent:    #6c63ff;
+      --accent2:   #a78bfa;
+      --green:     #34d399;
+      --red:       #f87171;
+      --text:      #e8eaf0;
+      --muted:     #6b7280;
+      --radius:    14px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 16px 80px;
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .logo {
+      font-size: 2.4rem;
+      margin-bottom: 12px;
+    }
+    header h1 {
+      font-size: 1.9rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+    header p {
+      color: var(--muted);
+      font-size: 0.95rem;
+      max-width: 420px;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      width: 100%;
+      max-width: 680px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+    }
+
+    /* ── Input row ── */
+    .input-row {
+      display: flex;
+      gap: 10px;
+    }
+    input[type="url"] {
+      flex: 1;
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type="url"]:focus {
+      border-color: var(--accent);
+    }
+    input[type="url"]::placeholder { color: var(--muted); }
+
+    button#extractBtn {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none;
+      border-radius: 10px;
+      padding: 12px 24px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+    button#extractBtn:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+    button#extractBtn:active:not(:disabled) { transform: translateY(0); }
+    button#extractBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── Status messages ── */
+    #status {
+      margin-top: 20px;
+      font-size: 0.9rem;
+      min-height: 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+    }
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2.5px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #errorMsg {
+      margin-top: 16px;
+      background: rgba(248,113,113,0.1);
+      border: 1px solid rgba(248,113,113,0.3);
+      border-radius: 10px;
+      padding: 12px 16px;
+      color: var(--red);
+      font-size: 0.88rem;
+      display: none;
+    }
+
+    /* ── Result ── */
+    #result {
+      margin-top: 32px;
+      display: none;
+      animation: fadeUp 0.4s ease;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .result-header h2 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+    a#mealieLink {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--green);
+      color: #0d1a12;
+      font-weight: 600;
+      font-size: 0.85rem;
+      padding: 8px 16px;
+      border-radius: 8px;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: opacity 0.2s, transform 0.15s;
+      flex-shrink: 0;
+    }
+    a#mealieLink:hover { opacity: 0.88; transform: translateY(-1px); }
+
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+    .btn-download {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1.5px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 500;
+      padding: 7px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: border-color 0.2s, background 0.2s, transform 0.15s;
+    }
+    .btn-download:hover { border-color: var(--accent2); background: var(--surface); transform: translateY(-1px); }
+
+    #mealieWarning {
+      margin-top: 14px;
+      background: rgba(251,191,36,0.08);
+      border: 1px solid rgba(251,191,36,0.3);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 0.83rem;
+      color: #fbbf24;
+      display: none;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 20px 0;
+    }
+
+    .meta-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .meta-pill {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .meta-pill span { color: var(--text); font-weight: 500; }
+
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 12px;
+    }
+
+    #description {
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    /* Ingredients */
+    #ingredientsList {
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    #ingredientsList li {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.88rem;
+      line-height: 1.4;
+    }
+
+    /* Instructions */
+    #instructionsList {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    #instructionsList li {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .step-num {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      font-size: 0.78rem;
+      font-weight: 700;
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .step-text {
+      font-size: 0.92rem;
+      line-height: 1.6;
+      color: var(--text);
+      padding-top: 3px;
+    }
+
+    /* Keywords */
+    #keywordsList {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .keyword {
+      background: rgba(108,99,255,0.12);
+      border: 1px solid rgba(108,99,255,0.3);
+      color: var(--accent2);
+      border-radius: 20px;
+      padding: 3px 12px;
+      font-size: 0.82rem;
+    }
+
+    /* Transcript toggle */
+    details {
+      margin-top: 20px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    summary {
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      color: var(--muted);
+      user-select: none;
+    }
+    summary:hover { color: var(--text); }
+    #transcriptText {
+      padding: 12px 14px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.6;
+      border-top: 1px solid var(--border);
+      white-space: pre-wrap;
+    }
+
+    /* Supported platforms note */
+    .platforms {
+      margin-top: 16px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    /* ── Mealie toggle ── */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 16px;
+      padding: 10px 14px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    .toggle-label {
+      flex: 1;
+      font-size: 0.87rem;
+      color: var(--text);
+    }
+    .toggle-label small {
+      display: block;
+      font-size: 0.76rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    /* Pill switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute;
+      inset: 0;
+      background: var(--border);
+      border-radius: 24px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .slider::before {
+      content: "";
+      position: absolute;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: #fff;
+      left: 3px; top: 3px;
+      transition: transform 0.2s;
+    }
+    .switch input:checked + .slider { background: var(--accent); }
+    .switch input:checked + .slider::before { transform: translateX(20px); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">🎬 → 🍳</div>
+    <h1>SousVid</h1>
+    <p>Paste a cooking video URL and get a structured recipe in Mealie -- automatically.</p>
+  </header>
+
+  <div class="card">
+    <div class="input-row">
+      <input
+        type="url"
+        id="urlInput"
+        placeholder="https://www.tiktok.com/@... or instagram.com/reel/..."
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button id="extractBtn" onclick="startExtract()">Extract</button>
+    </div>
+
+    <!-- Mealie push toggle -->
+    <div class="toggle-row">
+      <div class="toggle-label">
+        Push to Mealie
+        <small>Automatically save the extracted recipe to your Mealie instance</small>
+      </div>
+      <label class="switch" title="Toggle Mealie push">
+        <input type="checkbox" id="mealieToggle" checked />
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div id="status"></div>
+    <div id="errorMsg"></div>
+
+    <!-- ── Result ── -->
+    <div id="result">
+      <div class="divider"></div>
+
+      <div class="result-header">
+        <h2 id="recipeName"></h2>
+        <div class="action-buttons">
+          <button class="btn-download" id="dlJson" onclick="downloadJSON()" style="display:none">⬇ JSON</button>
+          <button class="btn-download" id="dlMd" onclick="downloadMarkdown()" style="display:none">⬇ Markdown</button>
+          <a id="mealieLink" href="#" target="_blank" rel="noopener" style="display:none">
+            Open in Mealie ↗
+          </a>
+        </div>
+      </div>
+
+      <div id="mealieWarning"></div>
+
+      <div id="description"></div>
+
+      <div class="meta-row" id="metaRow"></div>
+
+      <!-- Ingredients -->
+      <div id="ingredientsSection">
+        <div class="section-title">Ingredients</div>
+        <ul id="ingredientsList"></ul>
+      </div>
+
+      <!-- Instructions -->
+      <div id="instructionsSection">
+        <div class="section-title">Instructions</div>
+        <ol id="instructionsList"></ol>
+      </div>
+
+      <!-- Keywords -->
+      <div id="keywordsSection" style="display:none">
+        <div class="section-title">Tags</div>
+        <div id="keywordsList"></div>
+      </div>
+
+      <!-- Raw transcript -->
+      <details id="transcriptDetails" style="display:none">
+        <summary>🎙️ View raw transcript</summary>
+        <div id="transcriptText"></div>
+      </details>
+    </div>
+
+    <div class="platforms">
+      Supports: TikTok · Instagram Reels · YouTube Shorts · and 1000+ more via yt-dlp
+    </div>
+  </div>
+
+  <script>
+    const STEPS_WITH_MEALIE = [
+      "⬇️  Downloading video...",
+      "🖼️  Extracting frames...",
+      "🎤  Transcribing audio...",
+      "🤖  Extracting recipe with AI...",
+      "📬  Saving to Mealie...",
+    ];
+    const STEPS_NO_MEALIE = [
+      "⬇️  Downloading video...",
+      "🖼️  Extracting frames...",
+      "🎤  Transcribing audio...",
+      "🤖  Extracting recipe with AI...",
+      "✨  Finishing up...",
+    ];
+    let stepInterval = null;
+    let stepIndex = 0;
+
+    function setStatus(msg, showSpinner = true) {
+      const el = document.getElementById("status");
+      el.innerHTML = showSpinner
+        ? `<div class="spinner"></div><span>${msg}</span>`
+        : `<span>${msg}</span>`;
+    }
+
+    function clearStatus() {
+      document.getElementById("status").innerHTML = "";
+    }
+
+    function showError(msg) {
+      const el = document.getElementById("errorMsg");
+      el.textContent = "⚠️ " + msg;
+      el.style.display = "block";
+    }
+
+    function clearError() {
+      const el = document.getElementById("errorMsg");
+      el.style.display = "none";
+    }
+
+    function startProgressLoop() {
+      const pushToMealie = document.getElementById("mealieToggle").checked;
+      const STEPS = pushToMealie ? STEPS_WITH_MEALIE : STEPS_NO_MEALIE;
+      stepIndex = 0;
+      setStatus(STEPS[0]);
+      stepInterval = setInterval(() => {
+        stepIndex = Math.min(stepIndex + 1, STEPS.length - 1);
+        setStatus(STEPS[stepIndex]);
+      }, 18000); // ~18s per step -- rough estimate
+    }
+
+    function stopProgressLoop() {
+      if (stepInterval) { clearInterval(stepInterval); stepInterval = null; }
+    }
+
+    function formatDuration(iso) {
+      if (!iso) return null;
+      const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+      if (!m) return iso;
+      const h = parseInt(m[1] || 0);
+      const min = parseInt(m[2] || 0);
+      const parts = [];
+      if (h) parts.push(`${h}h`);
+      if (min) parts.push(`${min}m`);
+      return parts.join(" ") || iso;
+    }
+
+    function renderResult(data) {
+      const recipe = data.recipe;
+
+      document.getElementById("recipeName").textContent = recipe.name || "Untitled Recipe";
+
+      // Mealie link or warning
+      const mealieWarning = document.getElementById("mealieWarning");
+      if (data.mealie_url) {
+        const link = document.getElementById("mealieLink");
+        link.href = data.mealie_url;
+        link.style.display = "inline-flex";
+        mealieWarning.style.display = "none";
+      } else if (data.mealie_warning) {
+        mealieWarning.textContent = "⚠️ Mealie upload failed (recipe extracted successfully): " + data.mealie_warning;
+        mealieWarning.style.display = "block";
+      }
+
+      // Show download buttons
+      document.getElementById("dlJson").style.display = "inline-flex";
+      document.getElementById("dlMd").style.display = "inline-flex";
+
+      // Description
+      const desc = document.getElementById("description");
+      if (recipe.description) {
+        desc.textContent = recipe.description;
+        desc.style.display = "block";
+      } else {
+        desc.style.display = "none";
+      }
+
+      // Meta pills
+      const metaRow = document.getElementById("metaRow");
+      metaRow.innerHTML = "";
+      const metas = [
+        { label: "Yield",  value: recipe.recipeYield },
+        { label: "Prep",   value: formatDuration(recipe.prepTime) },
+        { label: "Cook",   value: formatDuration(recipe.cookTime) },
+        { label: "Total",  value: formatDuration(recipe.totalTime) },
+      ];
+      metas.filter(m => m.value).forEach(m => {
+        metaRow.innerHTML += `<div class="meta-pill">${m.label}: <span>${m.value}</span></div>`;
+      });
+
+      // Ingredients
+      const ingList = document.getElementById("ingredientsList");
+      ingList.innerHTML = "";
+      (recipe.recipeIngredient || []).forEach(ing => {
+        const li = document.createElement("li");
+        li.textContent = ing;
+        ingList.appendChild(li);
+      });
+      document.getElementById("ingredientsSection").style.display =
+        recipe.recipeIngredient?.length ? "block" : "none";
+
+      // Instructions
+      const insList = document.getElementById("instructionsList");
+      insList.innerHTML = "";
+      (recipe.recipeInstructions || []).forEach((step, i) => {
+        const li = document.createElement("li");
+        li.innerHTML = `
+          <div class="step-num">${i + 1}</div>
+          <div class="step-text">${step.text}</div>`;
+        insList.appendChild(li);
+      });
+      document.getElementById("instructionsSection").style.display =
+        recipe.recipeInstructions?.length ? "block" : "none";
+
+      // Keywords
+      const kwList = document.getElementById("keywordsList");
+      kwList.innerHTML = "";
+      if (recipe.keywords?.length) {
+        recipe.keywords.forEach(kw => {
+          kwList.innerHTML += `<span class="keyword">${kw}</span>`;
+        });
+        document.getElementById("keywordsSection").style.display = "block";
+      } else {
+        document.getElementById("keywordsSection").style.display = "none";
+      }
+
+      // Transcript
+      if (data.transcript) {
+        document.getElementById("transcriptText").textContent = data.transcript;
+        document.getElementById("transcriptDetails").style.display = "block";
+      }
+
+      document.getElementById("result").style.display = "block";
+    }
+
+    async function startExtract() {
+      const url = document.getElementById("urlInput").value.trim();
+      if (!url) {
+        showError("Please enter a video URL.");
+        return;
+      }
+
+      clearError();
+      document.getElementById("result").style.display = "none";
+      document.getElementById("extractBtn").disabled = true;
+      startProgressLoop();
+
+      try {
+        const pushToMealie = document.getElementById("mealieToggle").checked;
+        const resp = await fetch("/extract", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url, push_to_mealie: pushToMealie }),
+        });
+
+        stopProgressLoop();
+
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({ detail: resp.statusText }));
+          throw new Error(err.detail || "Extraction failed.");
+        }
+
+        const data = await resp.json();
+        _lastData = data;
+        setStatus("✅ Done!", false);
+        renderResult(data);
+
+      } catch (err) {
+        stopProgressLoop();
+        clearStatus();
+        showError(err.message);
+      } finally {
+        document.getElementById("extractBtn").disabled = false;
+      }
+    }
+
+    // Allow Enter key to submit
+    document.getElementById("urlInput").addEventListener("keydown", e => {
+      if (e.key === "Enter") startExtract();
+    });
+
+    // ── Downloads ────────────────────────────────────────────
+    let _lastData = null;
+
+    function _triggerDownload(content, filename, mime) {
+      const blob = new Blob([content], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function _safeFilename(name) {
+      return (name || "recipe").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    }
+
+    function downloadJSON() {
+      if (!_lastData) return;
+      const r = _lastData.recipe;
+
+      // Build a fully schema.org/Recipe compliant object
+      const schemaRecipe = {
+        "@context": "https://schema.org",
+        "@type": "Recipe",
+        "name": r.name,
+      };
+      if (r.description)      schemaRecipe.description     = r.description;
+      if (r.recipeYield)      schemaRecipe.recipeYield     = r.recipeYield;
+      if (r.prepTime)         schemaRecipe.prepTime        = r.prepTime;
+      if (r.cookTime)         schemaRecipe.cookTime        = r.cookTime;
+      if (r.totalTime)        schemaRecipe.totalTime       = r.totalTime;
+      if (r.keywords?.length) schemaRecipe.keywords        = r.keywords.join(", ");
+
+      if (r.recipeIngredient?.length) {
+        schemaRecipe.recipeIngredient = r.recipeIngredient;
+      }
+
+      if (r.recipeInstructions?.length) {
+        schemaRecipe.recipeInstructions = r.recipeInstructions.map(s => {
+          const step = { "@type": "HowToStep", "text": s.text };
+          if (s.title) step.name = s.title;  // 'name' is the schema.org property for step title
+          return step;
+        });
+      }
+
+      _triggerDownload(
+        JSON.stringify(schemaRecipe, null, 2),
+        _safeFilename(r.name) + ".json",
+        "application/json"
+      );
+    }
+
+    function downloadMarkdown() {
+      if (!_lastData) return;
+      const r = _lastData.recipe;
+      const lines = [];
+      lines.push(`# ${r.name || "Untitled Recipe"}`);
+      if (r.description) { lines.push(""); lines.push(r.description); }
+      lines.push("");
+
+      const metas = [];
+      if (r.recipeYield) metas.push(`**Yield:** ${r.recipeYield}`);
+      if (r.prepTime)    metas.push(`**Prep:** ${r.prepTime}`);
+      if (r.cookTime)    metas.push(`**Cook:** ${r.cookTime}`);
+      if (r.totalTime)   metas.push(`**Total:** ${r.totalTime}`);
+      if (metas.length) { lines.push(metas.join(" · ")); lines.push(""); }
+
+      if (r.recipeIngredient?.length) {
+        lines.push("## Ingredients");
+        r.recipeIngredient.forEach(i => lines.push(`- ${i}`));
+        lines.push("");
+      }
+
+      if (r.recipeInstructions?.length) {
+        lines.push("## Instructions");
+        r.recipeInstructions.forEach((s, i) => lines.push(`${i + 1}. ${s.text}`));
+        lines.push("");
+      }
+
+      if (r.keywords?.length) {
+        lines.push(`**Tags:** ${r.keywords.join(", ")}`);
+      }
+
+      _triggerDownload(lines.join("\n"), _safeFilename(r.name) + ".md", "text/markdown");
+    }
+  </script>
+</body>
+</html>

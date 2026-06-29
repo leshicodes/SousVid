@@ -1,0 +1,51 @@
+{
+  "@context": "https://schema.org",
+  "@type": "Recipe",
+  "name": "West African Inspired One Pot Chicken and Rice",
+  "description": "This recipe features bone-in chicken thighs and parboiled rice cooked in a rich, flavorful sauce with peanut butter and a blend of spices. It's a hearty one-pot meal with West African influences.",
+  "recipeYield": "4 servings",
+  "prepTime": "PT15M",
+  "cookTime": "PT45M",
+  "totalTime": "PT60M",
+  "keywords": "West African, chicken, rice, one pot, peanut butter, jollof",
+  "recipeIngredient": [
+    "800g bone-in chicken thighs",
+    "400g long grain parboiled rice (washed)",
+    "30g palm oil",
+    "1 large onion, sliced",
+    "4 garlic cloves, blended",
+    "300g red bell pepper",
+    "200g tomatoes",
+    "1-2 scotch bonnet",
+    "100g natural peanut butter",
+    "60g tomato paste",
+    "2 tbsp smoked paprika",
+    "2 tbsp curry powder",
+    "2 tbsp dried thyme",
+    "Salt to taste",
+    "700ml hot chicken stock",
+    "100g spinach or scent leaf"
+  ],
+  "recipeInstructions": [
+    {
+      "@type": "HowToStep",
+      "text": "Season chicken with 1 tbsp each salt, thyme, curry powder & paprika. Brown in palm oil. Remove."
+    },
+    {
+      "@type": "HowToStep",
+      "text": "In the same pot: sauté onion, then fry tomato paste, then add blended pepper mix (red bell pepper, tomatoes, scotch bonnet, and blended garlic cloves). Reduce by half. Season again with 1 tbsp each thyme, curry & paprika."
+    },
+    {
+      "@type": "HowToStep",
+      "text": "Whisk peanut butter with warm water or stock until smooth. Stir into sauce."
+    },
+    {
+      "@type": "HowToStep",
+      "text": "Add rice, return chicken, pour in stock (liquid slightly above rice). Cover and cook on low for 30–35 minutes. Optional: add foil under the lid for a smoky Jollof Rice bottom flavor."
+    },
+    {
+      "@type": "HowToStep",
+      "text": "Add spinach, steam for 5 minutes. Rest for 10 minutes. Fluff & serve."
+    }
+  ]
+}

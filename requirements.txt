@@ -1,0 +1,23 @@
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+pydantic==2.10.4
+pydantic-settings==2.7.0
+
+# yt-dlp is intentionally unpinned: platform extractors (Instagram, TikTok, YouTube)
+# break frequently and require up-to-date versions to keep working. Update manually
+# when a new version is available -- treat it like a security patch for this project.
+yt-dlp
+
+faster-whisper==1.1.1
+
+# openai SDK pointed at OpenRouter for LLM calls
+openai==1.59.6
+
+# httpx is the HTTP client for Mealie API calls; also a transitive dep of openai
+httpx==0.28.1
+
+# requests is required by faster-whisper internally (HuggingFace model downloads).
+# Our own code uses httpx, but this must stay.
+requests==2.32.3
+
+python-multipart==0.0.20

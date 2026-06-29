@@ -1,0 +1,7 @@
+# Development dependencies -- not installed in the Docker image.
+# Install with: pip install -r requirements-dev.txt
+
+ruff==0.9.1          # linting + formatting
+pytest==8.3.4        # test runner
+pytest-anyio==0.0.0  # async test support (if needed later)
+httpx==0.28.1        # TestClient transport for FastAPI tests

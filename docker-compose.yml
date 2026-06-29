@@ -1,0 +1,27 @@
+services:
+  sousvid:
+    build: .
+    container_name: sousvid
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      # Whisper model files are cached here across container restarts.
+      # The first run will download the model (~500MB for 'small'); subsequent
+      # runs start instantly.
+      - whisper-cache:/root/.cache/huggingface
+      # Place cookies.txt here for Instagram Reels support.
+      # See .env.example and README for export instructions.
+      - ./cookies:/app/cookies
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s  # allow time for Whisper model download on first run
+
+volumes:
+  whisper-cache:
+    driver: local
