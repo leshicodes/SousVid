@@ -52,7 +52,7 @@ Return a single JSON object with these fields (omit a field only if truly undete
   "cookTime": "ISO 8601 duration, e.g. 'PT25M'",
   "totalTime": "ISO 8601 duration",
   "keywords": ["array of 3-6 relevant tags"],
-  "recipe_photo_idx": "integer (0-indexed) or null -- the index of the image frame that best represents the finished recipe dish (the final plated dish or the completed food). Prioritize sharp, clear, well-lit, and in-focus images. Strongly avoid and deprioritize blurry, out-of-focus, or motion-blurred frames. Return null if no frame shows the completed dish clearly."
+  "recipe_photo_idx": "integer (0-indexed) or null -- the index of the image frame that best represents the finished recipe dish (the final plated dish or the completed food). Prioritize sharp, clear, well-lit, and in-focus close-ups of the food itself. Avoid frames showing faces, people eating/tasting the food, or raw ingredients. If a clean shot is not available, it is acceptable to choose a frame where hands are holding/serving the finished food, or a utensil is visible, as long as the completed dish is clearly shown. Return null if no frame shows the completed dish at all."
 }}"""
 
 
@@ -142,3 +142,71 @@ def extract_recipe(transcript: str, frames: list[str]) -> RecipeSchema:
     recipe = RecipeSchema(**data)
     logger.info(f"Extracted '{recipe.name}' with {len(recipe.recipeIngredient)} ingredients.")
     return recipe
+
+
+SYSTEM_PROMPT_PHOTO = (
+    "You are a recipe assistant. Select the index of the best photo for the given recipe."
+)
+
+USER_PROMPT_PHOTO_TEMPLATE = """\
+We extracted a recipe named '{recipe_name}'.
+From the attached video frames in order (first frame is index 0, second is index 1, etc.), select the index of the best, sharpest photo of the completed/plated dish.
+
+Prioritize sharp, clear, well-lit, and in-focus close-ups of the food itself.
+Avoid frames showing faces, people eating/tasting the food, or raw ingredients.
+If a clean shot is not available, it is acceptable to choose a frame where hands are holding/serving the finished food, or a utensil is visible, as long as the completed dish is clearly shown.
+
+Return a single JSON object with this field (return null if no frame shows the completed dish at all):
+{{
+  "recipe_photo_idx": integer (0-indexed) or null
+}}"""
+
+
+def select_recipe_photo(recipe_name: str, frames: list[str]) -> int | None:
+    """
+    Calls the LLM with a list of new frames to select the index of the best recipe photo.
+    Returns 0-indexed integer or None.
+    """
+    if not frames:
+        return None
+
+    content: list[dict] = [
+        {
+            "type": "text",
+            "text": USER_PROMPT_PHOTO_TEMPLATE.format(recipe_name=recipe_name),
+        }
+    ]
+
+    for frame_b64 in frames:
+        content.append({
+            "type": "image_url",
+            "image_url": {"url": f"data:image/jpeg;base64,{frame_b64}"},
+        })
+
+    logger.info(f"Calling LLM to select recipe photo from {len(frames)} new frames...")
+    try:
+        response = client.chat.completions.create(
+            model=settings.openrouter_model,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT_PHOTO},
+                {"role": "user", "content": content},
+            ],
+            temperature=0.2,
+            max_tokens=256,
+        )
+
+        raw_text = response.choices[0].message.content.strip()
+        if raw_text.startswith("```"):
+            lines = raw_text.split("\n")
+            raw_text = "\n".join(lines[1:-1]).strip()
+
+        data: dict = json.loads(raw_text)
+        idx = data.get("recipe_photo_idx")
+        if idx is not None:
+            idx = int(idx)
+            if 0 <= idx < len(frames):
+                return idx
+        return None
+    except Exception as exc:
+        logger.warning(f"Lighter photo-selection call failed (non-fatal): {exc}")
+        return None

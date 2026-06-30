@@ -34,7 +34,12 @@ def _video_duration(video_path: str) -> float:
     return float(result.stdout.strip())
 
 
-def extract_frames(video_path: str, num_frames: int | None = None) -> list[str]:
+def extract_frames(
+    video_path: str,
+    num_frames: int | None = None,
+    offset: float = 0.5,
+    segment: str = "all",
+) -> list[str]:
     """
     Extract evenly-spaced frames from a video and return them as base64 JPEGs.
 
@@ -44,6 +49,8 @@ def extract_frames(video_path: str, num_frames: int | None = None) -> list[str]:
     Args:
         video_path: Absolute path to the video file.
         num_frames:  How many frames to extract. Defaults to settings.max_frames.
+        offset:      A float between 0.0 and 1.0 to offset the frame timestamps (used for "all" segment).
+        segment:     The segment strategy ("all" or "hook_and_plating").
 
     Returns:
         List of base64-encoded JPEG strings, ready to attach to an LLM message.
@@ -53,11 +60,30 @@ def extract_frames(video_path: str, num_frames: int | None = None) -> list[str]:
     tmp_dir = tempfile.mkdtemp(prefix="sousvid_frames_")
     frames_b64: list[str] = []
 
-    try:
+    # Calculate timestamps based on segment strategy
+    timestamps: list[float] = []
+    if segment == "hook_and_plating":
+        # Split count: half in first 25% (hook), half in last 25% (plating/eating)
+        first_count = count // 2
+        last_count = count - first_count
+
+        # First 25% of the video
+        first_duration = duration * 0.25
+        for i in range(first_count):
+            timestamps.append(first_duration * (i + 0.5) / first_count)
+
+        # Last 25% of the video
+        last_start = duration * 0.75
+        last_duration = duration * 0.25
+        for i in range(last_count):
+            timestamps.append(last_start + last_duration * (i + 0.5) / last_count)
+    else:
+        # Standard: even spacing across the entire duration (with offset)
         for i in range(count):
-            # Place timestamps evenly across the video, offset by half-step so we
-            # don't land exactly on the first or last frame.
-            timestamp = duration * (i + 0.5) / count
+            timestamps.append(duration * (i + offset) / count)
+
+    try:
+        for i, timestamp in enumerate(timestamps):
             frame_path = os.path.join(tmp_dir, f"frame_{i:02d}.jpg")
 
             cmd = [

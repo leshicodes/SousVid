@@ -93,6 +93,23 @@ def run_pipeline(url: str, push_to_mealie: bool = True) -> ExtractResponse:
         logger.info("Extracting recipe via LLM...")
         recipe = extract_recipe(transcript, frames)
 
+        # 4.5. Photo Selection Retry (if initial frames yielded no photo) ------
+        if recipe.recipe_photo_idx is None:
+            logger.info("No recipe photo selected from the first batch of frames. Retrying with a shifted batch...")
+            try:
+                # Extract new frames targeting the first and last 25% of the video
+                second_batch_frames = extract_frames(video_path, segment="hook_and_plating")
+                if second_batch_frames:
+                    from app.llm import select_recipe_photo
+                    new_idx = select_recipe_photo(recipe.name, second_batch_frames)
+                    if new_idx is not None:
+                        logger.info(f"Successfully selected recipe photo from shifted batch at index {new_idx}.")
+                        recipe.recipe_photo_idx = new_idx
+                        # Swap out the frames list used for Mealie upload and UI display
+                        frames = second_batch_frames
+            except Exception as retry_exc:
+                logger.warning(f"Photo selection retry failed (non-fatal): {retry_exc}")
+
         # 5. Mealie upload -----------------------------------------------------
         if push_to_mealie:
             mealie_result = post_to_mealie(recipe, source_url=url, frames=frames)
