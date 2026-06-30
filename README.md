@@ -15,8 +15,8 @@ flowchart TD
     C{"Caption looks\nlike a recipe?"}
     D["ffmpeg: extract frames\n Whisper: transcribe audio"]
     E["Caption used directly\n Whisper skipped"]
-    F["OpenRouter LLM\nextract recipe + select dish photo frame"]
-    G["Crop & optimize photo\n(center-crop portrait to square)"]
+    F["OpenRouter LLM\nextract recipe\n + \nselect dish photo frame"]
+    G["Crop & optimize photo\n(crop to square)"]
     H{"Push to\nMealie?"}
     I["POST to Mealie\n& upload recipe photo"]
     J(["Return to UI\nJSON + Markdown + Photo + Mealie link"])
@@ -40,7 +40,7 @@ flowchart TD
 2. **Wait** 30-90 seconds for the pipeline to finish
 3. **Download** the recipe as Markdown or JSON, or open it directly in Mealie
 
-> **Smart shortcut:** If the caption already contains the full recipe, the pipeline skips Whisper and sends it straight to the LLM -- faster, cheaper, and usually more accurate.
+> **Smart shortcut:** If the caption already contains the full recipe, the pipeline skips Whisper and sends it straight to the LLM
 
 ---
 
