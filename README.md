@@ -11,7 +11,7 @@ Runs entirely on your homelab as a Docker container alongside your self-hosted [
 ```mermaid
 flowchart TD
     A(["User pastes video URL"])
-    B["yt-dlp\ndownload video + extract caption"]
+    B["yt-dlp\ndownload video\n + \nextract caption"]
     C{"Caption looks\nlike a recipe?"}
     D["ffmpeg: extract frames\n Whisper: transcribe audio"]
     E["Caption used directly\n Whisper skipped"]
