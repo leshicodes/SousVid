@@ -31,6 +31,7 @@ def download_video(url: str) -> tuple[str, str | None]:
     Raises:
         DownloadError: if yt-dlp cannot download the video.
     """
+    url = url.strip().strip("'\"")
     tmp_dir = tempfile.mkdtemp(prefix="sousvid_dl_")
     output_template = os.path.join(tmp_dir, "%(id)s.%(ext)s")
 

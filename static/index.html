@@ -516,6 +516,31 @@
       display: none;
     }
 
+    .recipe-photo-container {
+      display: none;
+      align-self: center;
+      max-width: 480px;
+      width: 100%;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+      margin: 8px 0;
+      transition: var(--transition);
+    }
+
+    .recipe-photo-container:hover {
+      transform: scale(1.01);
+      border-color: var(--accent-primary);
+    }
+
+    .recipe-photo {
+      width: 100%;
+      height: auto;
+      display: block;
+      object-fit: cover;
+    }
+
     .recipe-desc {
       font-size: 0.95rem;
       line-height: 1.6;
@@ -1032,6 +1057,11 @@
 
       <div class="recipe-warning" id="mealieWarning"></div>
 
+      <!-- Recipe Dish Photo -->
+      <div class="recipe-photo-container" id="recipePhotoContainer">
+        <img id="recipePhoto" class="recipe-photo" src="" alt="Recipe Photo" />
+      </div>
+
       <p class="recipe-desc" id="description"></p>
 
       <div class="meta-row" id="metaRow"></div>
@@ -1271,6 +1301,17 @@
         } else {
           mealieWarning.style.display = "none";
         }
+      }
+
+      // Recipe Photo
+      const photoContainer = document.getElementById("recipePhotoContainer");
+      const photoImg = document.getElementById("recipePhoto");
+      if (data.recipe_photo) {
+        photoImg.src = `data:image/jpeg;base64,${data.recipe_photo}`;
+        photoContainer.style.display = "block";
+      } else {
+        photoImg.src = "";
+        photoContainer.style.display = "none";
       }
 
       // Description

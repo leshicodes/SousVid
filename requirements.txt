@@ -25,3 +25,6 @@ python-multipart==0.0.20
 # Job queue: Celery with Redis broker/backend
 celery[redis]==5.4.0
 redis==5.2.1
+
+# Image processing for recipe photos
+Pillow>=10.0.0

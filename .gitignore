@@ -24,6 +24,7 @@ cookies/cookies.txt
 *.swo
 scripts/launch_session.ps1
 *.pen
+mealie.openapi.json
 
 # -- OS ------------------------------------------------------------------------
 .DS_Store

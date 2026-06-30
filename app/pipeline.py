@@ -95,10 +95,24 @@ def run_pipeline(url: str, push_to_mealie: bool = True) -> ExtractResponse:
 
         # 5. Mealie upload -----------------------------------------------------
         if push_to_mealie:
-            mealie_result = post_to_mealie(recipe, source_url=url)
+            mealie_result = post_to_mealie(recipe, source_url=url, frames=frames)
         else:
             logger.info("Mealie upload skipped (disabled by user).")
             mealie_result = {"skipped": True, "reason": "Disabled by user"}
+
+        # 6. Extract optimized recipe photo for UI response --------------------
+        recipe_photo_b64 = None
+        if (
+            frames
+            and recipe.recipe_photo_idx is not None
+            and 0 <= recipe.recipe_photo_idx < len(frames)
+        ):
+            from app.mealie import crop_and_optimize_image
+            import base64
+            logger.info(f"Optimizing recipe photo (frame {recipe.recipe_photo_idx}) for UI display...")
+            img_bytes = crop_and_optimize_image(frames[recipe.recipe_photo_idx])
+            if img_bytes:
+                recipe_photo_b64 = base64.b64encode(img_bytes).decode("utf-8")
 
         return ExtractResponse(
             recipe=recipe,
@@ -106,6 +120,7 @@ def run_pipeline(url: str, push_to_mealie: bool = True) -> ExtractResponse:
             mealie_slug=mealie_result.get("slug"),
             mealie_warning=mealie_result.get("reason") if mealie_result.get("skipped") else None,
             transcript=transcript,
+            recipe_photo=recipe_photo_b64,
         )
 
     finally:

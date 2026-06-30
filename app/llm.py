@@ -38,7 +38,7 @@ Extract the complete recipe from this cooking video.
 VIDEO TRANSCRIPT:
 {transcript}
 
-Key frames from the video are attached as images. \
+Key frames from the video are attached as images in order (the first image is index 0, the second is index 1, etc.). \
 If on-screen text shows measurements or ingredients, prefer those over spoken values when they differ.
 
 Return a single JSON object with these fields (omit a field only if truly undetectable):
@@ -51,7 +51,8 @@ Return a single JSON object with these fields (omit a field only if truly undete
   "prepTime": "ISO 8601 duration, e.g. 'PT10M'",
   "cookTime": "ISO 8601 duration, e.g. 'PT25M'",
   "totalTime": "ISO 8601 duration",
-  "keywords": ["array of 3-6 relevant tags"]
+  "keywords": ["array of 3-6 relevant tags"],
+  "recipe_photo_idx": "integer (0-indexed) or null -- the index of the image frame that best represents the finished recipe dish (the final plated dish or the completed food). Prioritize sharp, clear, well-lit, and in-focus images. Strongly avoid and deprioritize blurry, out-of-focus, or motion-blurred frames. Return null if no frame shows the completed dish clearly."
 }}"""
 
 

@@ -98,11 +98,12 @@ def health():
 @app.post("/extract/submit", response_model=JobSubmitResponse, tags=["Recipe"])
 async def submit_extract(request: ExtractRequest):
     """Enqueue a recipe extraction job and return a job ID immediately."""
+    clean_url = request.url.strip().strip("'\"")
     logger.info(
-        f"Enqueuing extract job: {request.url!r} "
+        f"Enqueuing extract job: {clean_url!r} "
         f"(push_to_mealie={request.push_to_mealie})"
     )
-    task = extract_task.delay(str(request.url), request.push_to_mealie)
+    task = extract_task.delay(clean_url, request.push_to_mealie)
     return JobSubmitResponse(job_id=task.id)
 
 

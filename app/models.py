@@ -23,6 +23,7 @@ class RecipeSchema(BaseModel):
     cookTime: Optional[str] = None
     totalTime: Optional[str] = None
     keywords: Optional[list[str]] = None
+    recipe_photo_idx: Optional[int] = Field(None, description="Index of the frame that best represents the finished recipe dish")
 
 
 class ExtractResponse(BaseModel):
@@ -31,6 +32,7 @@ class ExtractResponse(BaseModel):
     mealie_slug: Optional[str] = None
     mealie_warning: Optional[str] = None  # set if Mealie upload failed (non-fatal)
     transcript: Optional[str] = None  # included for debugging
+    recipe_photo: Optional[str] = Field(None, description="Base64-encoded optimized recipe photo for UI display")
 
 
 class JobSubmitResponse(BaseModel):
