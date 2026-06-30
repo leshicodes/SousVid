@@ -271,8 +271,9 @@
       cursor: pointer;
       transition: var(--transition);
       display: flex;
-      flex-direction: column;
-      gap: 6px;
+      flex-direction: row;
+      align-items: center;
+      gap: 12px;
       position: relative;
     }
 
@@ -465,6 +466,8 @@
       font-size: 2.2rem;
       font-weight: 700;
       line-height: 1.2;
+      flex: 1;
+      min-width: 300px;
     }
 
     .recipe-actions {
@@ -518,14 +521,12 @@
 
     .recipe-photo-container {
       display: none;
-      align-self: center;
-      max-width: 480px;
       width: 100%;
+      height: 420px;
       border-radius: var(--radius);
       overflow: hidden;
       border: 1px solid var(--border-color);
       box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
-      margin: 8px 0;
       transition: var(--transition);
     }
 
@@ -536,7 +537,7 @@
 
     .recipe-photo {
       width: 100%;
-      height: auto;
+      height: 100%;
       display: block;
       object-fit: cover;
     }
@@ -933,6 +934,452 @@
         padding: 24px 16px;
       }
     }
+
+    /* ── Serving Adjuster Buttons ── */
+    .servings-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      padding: 0 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+      line-height: 1;
+    }
+    .servings-btn:hover {
+      color: var(--accent-primary);
+    }
+    .servings-value {
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: 0 4px;
+    }
+
+    /* ── Step Timers & Floating Timer Cards ── */
+    .step-timer-btn {
+      align-self: flex-start;
+      display: inline-flex;
+      align-items: center;
+      background: rgba(232, 86, 42, 0.08);
+      border: 1px solid rgba(232, 86, 42, 0.2);
+      color: var(--accent-secondary);
+      border-radius: var(--radius-sm);
+      padding: 4px 8px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      margin-top: 4px;
+    }
+    .step-timer-btn:hover {
+      background: rgba(232, 86, 42, 0.15);
+      border-color: var(--accent-secondary);
+    }
+    
+    .active-timers-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 999;
+    }
+
+    .timer-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--accent-primary);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      min-width: 260px;
+      animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .timer-info {
+      flex: 1;
+    }
+
+    .timer-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--accent-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .timer-time {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      font-variant-numeric: tabular-nums;
+      margin-top: 2px;
+    }
+
+    .timer-close-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      transition: var(--transition);
+    }
+
+    .timer-close-btn:hover {
+      color: #f87171;
+      background: rgba(248, 113, 113, 0.1);
+    }
+
+    /* ── Top-Split grid ── */
+    .recipe-top-split {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 32px;
+      align-items: start;
+    }
+
+    .recipe-details-col {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ── Queue Row layout & thumbnail styles ── */
+    .queue-thumbnail-img {
+      width: 40px;
+      height: 40px;
+      border-radius: 6px;
+      object-fit: cover;
+      flex-shrink: 0;
+      border: 1px solid var(--border-color);
+    }
+    
+    .queue-thumbnail-placeholder {
+      width: 40px;
+      height: 40px;
+      border-radius: 6px;
+      background: var(--bg-base);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      border: 1px solid var(--border-color);
+    }
+
+    .queue-details {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .queue-item .delete-btn {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      opacity: 0;
+      transition: var(--transition);
+    }
+
+    .queue-item:hover .delete-btn {
+      opacity: 1;
+    }
+
+    /* ── Stepped horizontal tracker ── */
+    .progress-timeline-container {
+      max-width: 680px;
+      margin: 40px auto 0;
+    }
+    
+    .progress-timeline {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0;
+      padding: 24px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+      position: relative;
+    }
+    
+    .progress-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+      flex: 1;
+      text-align: center;
+      position: relative;
+      z-index: 2;
+    }
+
+    .progress-step.active {
+      color: var(--accent-primary);
+      font-weight: 600;
+    }
+
+    .progress-step.completed {
+      color: var(--mealie-green);
+    }
+
+    .progress-step-indicator {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--bg-base);
+      border: 2px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: var(--transition);
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      font-weight: bold;
+    }
+
+    .progress-step.active .progress-step-indicator {
+      border-color: var(--accent-primary);
+      background: var(--bg-base);
+      color: var(--accent-primary);
+      box-shadow: 0 0 10px rgba(232, 86, 42, 0.4);
+      animation: pulse 1.5s infinite;
+    }
+
+    .progress-step.completed .progress-step-indicator {
+      border-color: var(--mealie-green);
+      background: var(--mealie-green);
+      color: #0c0d0e;
+    }
+
+    .progress-line-bg {
+      position: absolute;
+      top: 35px;
+      left: 10%;
+      right: 10%;
+      height: 2px;
+      background: var(--border-color);
+      z-index: 1;
+    }
+
+    .progress-line-fill {
+      position: absolute;
+      top: 35px;
+      left: 10%;
+      height: 2px;
+      background: var(--mealie-green);
+      z-index: 1;
+      transition: width 0.4s ease;
+      width: 0%;
+    }
+
+    /* ── Focus Mode Overlay ── */
+    .focus-mode-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(12, 13, 14, 0.98);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 24px;
+      backdrop-filter: blur(12px);
+      animation: fadeIn 0.3s ease;
+    }
+
+    .focus-close-btn {
+      position: absolute;
+      right: 32px;
+      top: 32px;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 2.5rem;
+      cursor: pointer;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+    }
+
+    .focus-close-btn:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .focus-container {
+      max-width: 800px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    .focus-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+
+    #focusRecipeName {
+      font-family: var(--font-heading);
+      font-size: 1.4rem;
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .focus-progress-bar {
+      width: 100%;
+      height: 6px;
+      background: var(--border-color);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .focus-progress-fill {
+      height: 100%;
+      background: var(--accent-primary);
+      width: 0%;
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .focus-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 48px;
+      display: flex;
+      gap: 32px;
+      align-items: flex-start;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    }
+
+    .focus-step-number {
+      width: 64px;
+      height: 64px;
+      background: var(--accent-primary);
+      color: #fff;
+      font-size: 2rem;
+      font-weight: 700;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 4px 15px rgba(232, 86, 42, 0.3);
+    }
+
+    .focus-step-text {
+      font-size: 1.8rem;
+      line-height: 1.6;
+      color: var(--text-primary);
+      font-weight: 400;
+      flex: 1;
+    }
+
+    .focus-controls {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .focus-btn {
+      padding: 16px 32px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: var(--transition);
+      border: none;
+    }
+
+    .focus-btn.primary {
+      background: var(--accent-primary);
+      color: #fff;
+    }
+    .focus-btn.primary:hover {
+      background: var(--accent-primary-hover);
+      transform: translateY(-1px);
+    }
+    .focus-btn.primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .focus-btn.secondary {
+      background: var(--bg-panel-hover);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+    .focus-btn.secondary:hover:not(:disabled) {
+      border-color: var(--text-secondary);
+      background: var(--bg-panel);
+    }
+    .focus-btn.secondary:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .focus-footer-hint {
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 12px;
+    }
+
+    @media (max-width: 1080px) {
+      .recipe-top-split {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+      .recipe-photo-container {
+        height: 320px;
+        max-width: 480px;
+        margin: 0 auto;
+      }
+    }
   </style>
 </head>
 
@@ -1017,27 +1464,33 @@
 
     <!-- Live Progress State -->
     <div id="progressState" style="display:none; animation: fadeIn 0.3s ease;">
-      <div class="progress-timeline" style="max-width: 580px; margin: 40px auto 0;">
-        <div class="queue-header" style="margin-bottom: 8px; border-bottom: none;">EXTRACTING RECIPE...</div>
-        <div class="progress-step" id="p-step-downloading">
-          <div class="progress-step-indicator"></div>
-          <span><i data-lucide="download" style="width: 14px; height: 14px; margin-right: 6px;"></i>Downloading video...</span>
-        </div>
-        <div class="progress-step" id="p-step-frames">
-          <div class="progress-step-indicator"></div>
-          <span><i data-lucide="image" style="width: 14px; height: 14px; margin-right: 6px;"></i>Extracting frames...</span>
-        </div>
-        <div class="progress-step" id="p-step-transcribing">
-          <div class="progress-step-indicator"></div>
-          <span><i data-lucide="mic" style="width: 14px; height: 14px; margin-right: 6px;"></i>Transcribing audio...</span>
-        </div>
-        <div class="progress-step" id="p-step-llm">
-          <div class="progress-step-indicator"></div>
-          <span><i data-lucide="cpu" style="width: 14px; height: 14px; margin-right: 6px;"></i>Extracting recipe with AI...</span>
-        </div>
-        <div class="progress-step" id="p-step-mealie">
-          <div class="progress-step-indicator"></div>
-          <span><i data-lucide="send" style="width: 14px; height: 14px; margin-right: 6px;"></i>Saving to Mealie...</span>
+      <div class="progress-timeline-container">
+        <div class="queue-header" style="margin-bottom: 16px; border-bottom: none; text-align: center;">EXTRACTING RECIPE...</div>
+        <div class="progress-timeline">
+          <!-- Background Line -->
+          <div class="progress-line-bg"></div>
+          <div class="progress-line-fill" id="progressLineFill"></div>
+          
+          <div class="progress-step" id="p-step-downloading">
+            <div class="progress-step-indicator">1</div>
+            <span>Download</span>
+          </div>
+          <div class="progress-step" id="p-step-frames">
+            <div class="progress-step-indicator">2</div>
+            <span>Frames</span>
+          </div>
+          <div class="progress-step" id="p-step-transcribing">
+            <div class="progress-step-indicator">3</div>
+            <span>Transcribe</span>
+          </div>
+          <div class="progress-step" id="p-step-llm">
+            <div class="progress-step-indicator">4</div>
+            <span>AI Extract</span>
+          </div>
+          <div class="progress-step" id="p-step-mealie">
+            <div class="progress-step-indicator">5</div>
+            <span>Mealie</span>
+          </div>
         </div>
       </div>
     </div>
@@ -1047,6 +1500,7 @@
       <div class="recipe-header">
         <h1 id="recipeName"></h1>
         <div class="recipe-actions">
+          <button class="action-btn" id="focusModeBtn" onclick="toggleFocusMode()"><i data-lucide="scan-eye" style="width: 14px; height: 14px; margin-right: 4px; vertical-align: text-bottom;"></i> Focus Mode</button>
           <button class="action-btn" onclick="downloadJSON()">⬇ JSON</button>
           <button class="action-btn" onclick="downloadMarkdown()">⬇ Markdown</button>
           <a class="action-btn mealie-btn" id="mealieLink" href="#" target="_blank" rel="noopener" style="display:none">
@@ -1057,14 +1511,25 @@
 
       <div class="recipe-warning" id="mealieWarning"></div>
 
-      <!-- Recipe Dish Photo -->
-      <div class="recipe-photo-container" id="recipePhotoContainer">
-        <img id="recipePhoto" class="recipe-photo" src="" alt="Recipe Photo" />
+      <!-- Top Split layout container -->
+      <div class="recipe-top-split">
+        <!-- Recipe Dish Photo -->
+        <div class="recipe-photo-container" id="recipePhotoContainer">
+          <img id="recipePhoto" class="recipe-photo" src="" alt="Recipe Photo" />
+        </div>
+        
+        <!-- Recipe details column -->
+        <div class="recipe-details-col">
+          <p class="recipe-desc" id="description"></p>
+          <div class="meta-row" id="metaRow"></div>
+          
+          <!-- Keywords / Tags -->
+          <div class="tags-section" id="keywordsSection" style="display:none">
+            <h3 class="column-title" style="font-size: 0.68rem; margin-bottom: 8px; border-bottom: none; padding-bottom: 0;">Tags</h3>
+            <div class="tags-list" id="keywordsList"></div>
+          </div>
+        </div>
       </div>
-
-      <p class="recipe-desc" id="description"></p>
-
-      <div class="meta-row" id="metaRow"></div>
 
       <div class="recipe-grid">
         <!-- Ingredients -->
@@ -1080,17 +1545,49 @@
         </div>
       </div>
 
-      <!-- Keywords / Tags -->
-      <div class="tags-section" id="keywordsSection" style="display:none">
-        <h3 class="column-title">Tags</h3>
-        <div class="tags-list" id="keywordsList"></div>
-      </div>
-
       <!-- Raw transcript -->
       <details id="transcriptDetails" style="display:none">
         <summary>View raw transcript & debug logs</summary>
         <div id="transcriptText"></div>
       </details>
+    </div>
+
+    <!-- Active Timers Container -->
+    <div id="activeTimersContainer" class="active-timers-container"></div>
+
+    <!-- Focus Mode Overlay -->
+    <div id="focusModeOverlay" class="focus-mode-overlay" style="display: none;">
+      <button class="focus-close-btn" onclick="toggleFocusMode()" title="Exit Focus Mode">×</button>
+      
+      <div class="focus-container">
+        <div class="focus-header">
+          <span id="focusRecipeName">Recipe Name</span>
+          <span id="focusStepProgress">Step 1 of 5</span>
+        </div>
+        
+        <!-- Stepper Progress Bar -->
+        <div class="focus-progress-bar">
+          <div id="focusProgressBarFill" class="focus-progress-fill"></div>
+        </div>
+        
+        <div class="focus-card">
+          <div id="focusStepNumber" class="focus-step-number">1</div>
+          <div id="focusStepText" class="focus-step-text">Instruction step content goes here.</div>
+        </div>
+        
+        <div class="focus-controls">
+          <button class="focus-btn secondary" id="focusPrevBtn" onclick="navigateFocus(-1)">
+            Previous
+          </button>
+          <button class="focus-btn primary" id="focusNextBtn" onclick="navigateFocus(1)">
+            Next
+          </button>
+        </div>
+        
+        <div class="focus-footer-hint">
+          Tip: Use Left/Right Arrow keys or Spacebar to navigate
+        </div>
+      </div>
     </div>
 
   </div>
@@ -1101,6 +1598,371 @@
     let activeJobId = null;
     let activeInterval = null;
     let _lastData = null;
+
+    // Servings scaling & timers & focus variables
+    let _originalIngredients = [];
+    let _baseServingsStr = "";
+    let currentMultiplier = 1.0;
+    
+    let activeTimers = [];
+    
+    let focusActive = false;
+    let focusStepIdx = 0;
+    let focusInstructions = [];
+
+    // Helper functions for scaling quantities
+    function decimalToFraction(val) {
+      const tolerance = 0.05;
+      const whole = Math.floor(val);
+      const frac = val - whole;
+      if (frac < tolerance) return whole > 0 ? `${whole}` : '0';
+      if (Math.abs(frac - 0.25) < tolerance) return whole > 0 ? `${whole} 1/4` : '1/4';
+      if (Math.abs(frac - 0.33) < tolerance) return whole > 0 ? `${whole} 1/3` : '1/3';
+      if (Math.abs(frac - 0.5) < tolerance) return whole > 0 ? `${whole} 1/2` : '1/2';
+      if (Math.abs(frac - 0.67) < tolerance) return whole > 0 ? `${whole} 2/3` : '2/3';
+      if (Math.abs(frac - 0.75) < tolerance) return whole > 0 ? `${whole} 3/4` : '3/4';
+      return `${Math.round(val * 10) / 10}`;
+    }
+
+    function scaleIngredient(ing, mult) {
+      if (mult === 1.0) return ing;
+      
+      const rangeRegex = /^\s*(\d+(?:\.\d+)?)\s*(?:-|to)\s*(\d+(?:\.\d+)?)/i;
+      let match = ing.match(rangeRegex);
+      if (match) {
+        const v1 = parseFloat(match[1]) * mult;
+        const v2 = parseFloat(match[2]) * mult;
+        const formatV1 = decimalToFraction(v1);
+        const formatV2 = decimalToFraction(v2);
+        return ing.replace(rangeRegex, `${formatV1} - ${formatV2}`);
+      }
+
+      const mixedFracRegex = /^\s*(\d+)\s+([1-9])\/([1-9])/;
+      match = ing.match(mixedFracRegex);
+      if (match) {
+        const whole = parseInt(match[1]);
+        const num = parseInt(match[2]);
+        const den = parseInt(match[3]);
+        const val = (whole + num / den) * mult;
+        return ing.replace(mixedFracRegex, decimalToFraction(val));
+      }
+
+      const fracRegex = /^\s*([1-9])\/([1-9])/;
+      match = ing.match(fracRegex);
+      if (match) {
+        const num = parseInt(match[1]);
+        const den = parseInt(match[2]);
+        const val = (num / den) * mult;
+        return ing.replace(fracRegex, decimalToFraction(val));
+      }
+
+      const numRegex = /^\s*(\d+(?:\.\d+)?)/;
+      match = ing.match(numRegex);
+      if (match) {
+        const val = parseFloat(match[1]) * mult;
+        return ing.replace(numRegex, decimalToFraction(val));
+      }
+
+      return ing;
+    }
+
+    function scaleServingsText(yieldStr, mult) {
+      const rangeRegex = /(\d+(?:\.\d+)?)\s*(?:-|to)\s*(\d+(?:\.\d+)?)/i;
+      let match = yieldStr.match(rangeRegex);
+      if (match) {
+        const v1 = parseFloat(match[1]) * mult;
+        const v2 = parseFloat(match[2]) * mult;
+        return `${decimalToFraction(v1)} - ${decimalToFraction(v2)}`;
+      }
+      const numRegex = /(\d+(?:\.\d+)?)/;
+      match = yieldStr.match(numRegex);
+      if (match) {
+        const val = parseFloat(match[1]) * mult;
+        return `${decimalToFraction(val)}`;
+      }
+      return yieldStr;
+    }
+
+    const multipliers = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 4.0];
+    function adjustServings(change) {
+      let currentIdx = multipliers.indexOf(currentMultiplier);
+      if (currentIdx === -1) currentIdx = 3;
+
+      const nextIdx = currentIdx + change;
+      if (nextIdx >= 0 && nextIdx < multipliers.length) {
+        currentMultiplier = multipliers[nextIdx];
+        
+        const valueEl = document.getElementById("servingsValue");
+        if (valueEl) {
+          const scaledServings = scaleServingsText(_baseServingsStr, currentMultiplier);
+          valueEl.innerHTML = `${scaledServings} <span style="font-size: 0.75rem; color: var(--accent-primary); margin-left: 4px;">(${currentMultiplier}x)</span>`;
+        }
+
+        const ingList = document.getElementById("ingredientsList");
+        const completedStates = Array.from(ingList.children).map(c => c.classList.contains("completed"));
+        ingList.innerHTML = "";
+        _originalIngredients.forEach((ing, i) => {
+          const scaledIng = scaleIngredient(ing, currentMultiplier);
+          const row = document.createElement("div");
+          row.className = `ing-row ${completedStates[i] ? 'completed' : ''}`;
+          row.onclick = () => toggleIngredient(row);
+          row.innerHTML = `
+            <div class="ing-checkbox"></div>
+            <div class="ing-text">${scaledIng}</div>
+          `;
+          ingList.appendChild(row);
+        });
+      }
+    }
+
+    // Step duration parser & timer functions
+    function parseDurationToSeconds(text) {
+      const timeRegex = /(\d+(?:\.\d+)?|\d+\s+\d+\/\d+|\d+\/\d+)\s*(minutes|minute|mins|min|hours|hour|hrs|hr|seconds|second|secs|sec)\b/i;
+      const match = text.match(timeRegex);
+      if (!match) return null;
+
+      let qtyStr = match[1];
+      const unitStr = match[2].toLowerCase();
+
+      let qty = 0;
+      if (qtyStr.includes('/')) {
+        const parts = qtyStr.split(/\s+/);
+        if (parts.length === 2) {
+          const whole = parseFloat(parts[0]);
+          const fracParts = parts[1].split('/');
+          qty = whole + parseFloat(fracParts[0]) / parseFloat(fracParts[1]);
+        } else {
+          const fracParts = parts[0].split('/');
+          qty = parseFloat(fracParts[0]) / parseFloat(fracParts[1]);
+        }
+      } else {
+        qty = parseFloat(qtyStr);
+      }
+
+      let multiplier = 60;
+      if (unitStr.startsWith('hour') || unitStr.startsWith('hr')) {
+        multiplier = 3600;
+      } else if (unitStr.startsWith('second') || unitStr.startsWith('sec')) {
+        multiplier = 1;
+      }
+
+      return {
+        seconds: Math.round(qty * multiplier),
+        display: match[0]
+      };
+    }
+
+    function startStepTimer(event, seconds, label) {
+      if (event) event.stopPropagation();
+
+      const timerId = "timer-" + Date.now();
+      const endTime = Date.now() + seconds * 1000;
+
+      const timerObj = {
+        id: timerId,
+        label: label,
+        endTime: endTime,
+        secondsRemaining: seconds,
+        intervalId: null,
+        soundPlayed: false
+      };
+
+      activeTimers.push(timerObj);
+      renderTimers();
+
+      timerObj.intervalId = setInterval(() => {
+        const remaining = Math.max(0, Math.round((timerObj.endTime - Date.now()) / 1000));
+        timerObj.secondsRemaining = remaining;
+
+        if (remaining <= 0) {
+          clearInterval(timerObj.intervalId);
+          if (!timerObj.soundPlayed) {
+            playAlarmSound();
+            timerObj.soundPlayed = true;
+          }
+          triggerTimerFlash(timerId);
+        }
+
+        updateTimerDisplay(timerId, remaining);
+      }, 1000);
+    }
+
+    function formatTimeRemaining(totalSec) {
+      const h = Math.floor(totalSec / 3600);
+      const m = Math.floor((totalSec % 3600) / 60);
+      const s = totalSec % 60;
+      const pad = (n) => String(n).padStart(2, '0');
+      if (h > 0) {
+        return `${h}:${pad(m)}:${pad(s)}`;
+      }
+      return `${m}:${pad(s)}`;
+    }
+
+    function renderTimers() {
+      const container = document.getElementById("activeTimersContainer");
+      container.innerHTML = "";
+
+      activeTimers.forEach(t => {
+        const card = document.createElement("div");
+        card.id = t.id;
+        card.className = "timer-card";
+        card.innerHTML = `
+          <div class="timer-info">
+            <div class="timer-label">${t.label} Timer</div>
+            <div class="timer-time" id="${t.id}-time">${formatTimeRemaining(t.secondsRemaining)}</div>
+          </div>
+          <button class="timer-close-btn" onclick="removeTimer('${t.id}')">×</button>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function updateTimerDisplay(id, remaining) {
+      const el = document.getElementById(`${id}-time`);
+      if (el) {
+        el.textContent = formatTimeRemaining(remaining);
+        if (remaining <= 0) {
+          el.textContent = "DONE!";
+          el.style.color = "var(--mealie-green)";
+        }
+      }
+    }
+
+    function removeTimer(id) {
+      const idx = activeTimers.findIndex(t => t.id === id);
+      if (idx !== -1) {
+        clearInterval(activeTimers[idx].intervalId);
+        activeTimers.splice(idx, 1);
+      }
+      renderTimers();
+    }
+
+    function triggerTimerFlash(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.style.borderWidth = "2px";
+        el.style.animation = "pulse 1.0s infinite";
+      }
+    }
+
+    let audioCtx = null;
+    function playAlarmSound() {
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        const playChime = (delay, freq) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = "sine";
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0, audioCtx.currentTime + delay);
+          gain.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + delay + 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delay + 0.8);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(audioCtx.currentTime + delay);
+          osc.stop(audioCtx.currentTime + delay + 0.85);
+        };
+        playChime(0, 880);
+        playChime(0.2, 1046.5);
+        playChime(0.4, 1318.5);
+      } catch (e) {
+        console.error("Failed to play synthesized alarm sound", e);
+      }
+    }
+
+    // Cooking Focus Mode functions
+    function toggleFocusMode() {
+      const overlay = document.getElementById("focusModeOverlay");
+      if (!overlay) return;
+
+      focusActive = !focusActive;
+      if (focusActive) {
+        if (!_lastData || !_lastData.recipe || !_lastData.recipe.recipeInstructions) {
+          focusActive = false;
+          return;
+        }
+        focusInstructions = _lastData.recipe.recipeInstructions;
+        if (focusInstructions.length === 0) {
+          focusActive = false;
+          return;
+        }
+
+        const cards = Array.from(document.querySelectorAll(".instructions-list .step-card"));
+        const firstActiveIdx = cards.findIndex(c => !c.classList.contains("done"));
+        focusStepIdx = firstActiveIdx !== -1 ? firstActiveIdx : 0;
+
+        document.getElementById("focusRecipeName").textContent = _lastData.recipe.name || "Recipe";
+        renderFocusStep();
+        overlay.style.display = "flex";
+        
+        window.addEventListener("keydown", handleFocusKeys);
+      } else {
+        overlay.style.display = "none";
+        window.removeEventListener("keydown", handleFocusKeys);
+        
+        const cards = Array.from(document.querySelectorAll(".instructions-list .step-card"));
+        cards.forEach((card, idx) => {
+          if (idx < focusStepIdx) {
+            card.classList.add("done");
+            card.classList.remove("active", "upcoming");
+          } else if (idx === focusStepIdx) {
+            card.classList.add("active");
+            card.classList.remove("done", "upcoming");
+          } else {
+            card.classList.add("upcoming");
+            card.classList.remove("done", "active");
+          }
+        });
+      }
+    }
+
+    function renderFocusStep() {
+      if (focusStepIdx < 0) focusStepIdx = 0;
+      if (focusStepIdx >= focusInstructions.length) focusStepIdx = focusInstructions.length - 1;
+
+      const step = focusInstructions[focusStepIdx];
+      document.getElementById("focusStepNumber").textContent = focusStepIdx + 1;
+      document.getElementById("focusStepText").textContent = step.text;
+      document.getElementById("focusStepProgress").textContent = `Step ${focusStepIdx + 1} of ${focusInstructions.length}`;
+
+      const percent = ((focusStepIdx + 1) / focusInstructions.length) * 100;
+      document.getElementById("focusProgressBarFill").style.width = `${percent}%`;
+
+      document.getElementById("focusPrevBtn").disabled = (focusStepIdx === 0);
+      
+      const nextBtn = document.getElementById("focusNextBtn");
+      if (focusStepIdx === focusInstructions.length - 1) {
+        nextBtn.innerHTML = 'Complete';
+      } else {
+        nextBtn.innerHTML = 'Next';
+      }
+    }
+
+    function navigateFocus(direction) {
+      if (direction === 1 && focusStepIdx === focusInstructions.length - 1) {
+        focusStepIdx = focusInstructions.length;
+        toggleFocusMode();
+        return;
+      }
+      focusStepIdx += direction;
+      renderFocusStep();
+    }
+
+    function handleFocusKeys(e) {
+      if (!focusActive) return;
+      if (e.key === "ArrowRight" || e.key === " ") {
+        e.preventDefault();
+        navigateFocus(1);
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        navigateFocus(-1);
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        toggleFocusMode();
+      }
+    }
 
     // Load history from localStorage on startup
     (function initHistory() {
@@ -1164,16 +2026,27 @@
           statusLabel = item.step;
         }
 
+        const thumbnailSrc = item.thumbnail ? `data:image/jpeg;base64,${item.thumbnail}` : '';
+        const thumbnailHtml = thumbnailSrc 
+          ? `<img src="${thumbnailSrc}" class="queue-thumbnail-img" alt="Recipe Thumbnail" />`
+          : `<div class="queue-thumbnail-placeholder"><i data-lucide="cooking-pot" style="width: 16px; height: 16px; color: var(--text-muted);"></i></div>`;
+
         itemCard.innerHTML = `
-          <div class="item-header">
-            <span class="item-badge">${detectPlatform(item.url)}</span>
-            <span class="item-status ${statusClass}">${statusLabel}</span>
+          ${thumbnailHtml}
+          <div class="queue-details">
+            <div class="item-header">
+              <span class="item-badge">${detectPlatform(item.url)}</span>
+              <span class="item-status ${statusClass}">${statusLabel}</span>
+            </div>
+            <div class="item-title">${item.recipeName || item.url}</div>
           </div>
-          <div class="item-title">${item.recipeName || item.url}</div>
           <button class="delete-btn" title="Remove from history" onclick="removeHistoryItem('${item.job_id}')">×</button>
         `;
         listEl.appendChild(itemCard);
       });
+      if (typeof lucide !== "undefined") {
+        lucide.createIcons();
+      }
     }
 
     function selectHistoryItem(jobId) {
@@ -1248,7 +2121,6 @@
     }
 
     function updateProgressSteps(step) {
-      // Steps order: downloading -> frames -> transcribing -> llm -> mealie
       const steps = ["downloading", "frames", "transcribing", "llm", "mealie"];
       const currentIdx = steps.indexOf(step);
 
@@ -1257,12 +2129,25 @@
         if (!el) return;
 
         el.className = "progress-step";
+        const indicator = el.querySelector(".progress-step-indicator");
+        
         if (idx < currentIdx) {
           el.classList.add("completed");
+          if (indicator) indicator.innerHTML = "✓";
         } else if (idx === currentIdx) {
           el.classList.add("active");
+          if (indicator) indicator.innerHTML = (idx + 1).toString();
+        } else {
+          el.classList.add("upcoming");
+          if (indicator) indicator.innerHTML = (idx + 1).toString();
         }
       });
+
+      const fillEl = document.getElementById("progressLineFill");
+      if (fillEl) {
+        const percent = currentIdx >= 0 ? (currentIdx / (steps.length - 1)) * 100 : 0;
+        fillEl.style.width = `${percent}%`;
+      }
     }
 
     function formatDuration(iso) {
@@ -1323,17 +2208,32 @@
         desc.style.display = "none";
       }
 
+      // Initialize servings variables
+      _originalIngredients = recipe.recipeIngredient || [];
+      _baseServingsStr = recipe.recipeYield || "4";
+      currentMultiplier = 1.0;
+
       // Meta pills
       const metaRow = document.getElementById("metaRow");
       metaRow.innerHTML = "";
       const icons = {
-        Yield: `<i data-lucide="users" style="width: 14px; height: 14px; margin-right: 4px;"></i>`,
         Prep: `<i data-lucide="clock" style="width: 14px; height: 14px; margin-right: 4px;"></i>`,
         Cook: `<i data-lucide="flame" style="width: 14px; height: 14px; margin-right: 4px;"></i>`,
         Total: `<i data-lucide="hourglass" style="width: 14px; height: 14px; margin-right: 4px;"></i>`
       };
+
+      // Add interactive Servings Adjuster
+      metaRow.innerHTML += `
+        <div class="meta-pill servings-pill">
+          <i data-lucide="users" style="width: 14px; height: 14px; margin-right: 4px;"></i>
+          <span>Yield:</span>
+          <button class="servings-btn" onclick="adjustServings(-1)" title="Decrease Servings">−</button>
+          <span id="servingsValue" class="servings-value">${_baseServingsStr}</span>
+          <button class="servings-btn" onclick="adjustServings(1)" title="Increase Servings">+</button>
+        </div>
+      `;
+
       const metas = [
-        { label: "Yield", value: recipe.recipeYield, key: "Yield" },
         { label: "Prep", value: formatDuration(recipe.prepTime), key: "Prep" },
         { label: "Cook", value: formatDuration(recipe.cookTime), key: "Cook" },
         { label: "Total", value: formatDuration(recipe.totalTime), key: "Total" },
@@ -1345,7 +2245,7 @@
       // Ingredients Checklist
       const ingList = document.getElementById("ingredientsList");
       ingList.innerHTML = "";
-      (recipe.recipeIngredient || []).forEach(ing => {
+      _originalIngredients.forEach(ing => {
         const row = document.createElement("div");
         row.className = "ing-row";
         row.onclick = () => toggleIngredient(row);
@@ -1356,19 +2256,31 @@
         ingList.appendChild(row);
       });
       document.getElementById("ingredientsList").parentElement.style.display =
-        recipe.recipeIngredient?.length ? "block" : "none";
+        _originalIngredients.length ? "block" : "none";
 
-      // Instructions Step-by-Step
+      // Instructions Step-by-Step with Timer Buttons
       const insList = document.getElementById("instructionsList");
       insList.innerHTML = "";
       (recipe.recipeInstructions || []).forEach((step, i) => {
         const card = document.createElement("div");
-        // Step 1 is active by default, others upcoming
         card.className = `step-card ${i === 0 ? 'active' : 'upcoming'}`;
-        card.onclick = () => toggleInstruction(card);
+        
+        const durationInfo = parseDurationToSeconds(step.text);
+        let timerButtonHtml = "";
+        if (durationInfo) {
+          timerButtonHtml = `
+            <button class="step-timer-btn" onclick="startStepTimer(event, ${durationInfo.seconds}, '${durationInfo.display}')">
+              <i data-lucide="timer" style="width: 12px; height: 12px; margin-right: 4px;"></i> Start Timer (${durationInfo.display})
+            </button>
+          `;
+        }
+
         card.innerHTML = `
-          <div class="step-badge">${i + 1}</div>
-          <div class="step-text">${step.text}</div>
+          <div class="step-badge" onclick="toggleInstruction(this.closest('.step-card'))">${i + 1}</div>
+          <div class="step-text-container" style="flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0;">
+            <div class="step-text" onclick="toggleInstruction(this.closest('.step-card'))">${step.text}</div>
+            ${timerButtonHtml}
+          </div>
         `;
         insList.appendChild(card);
       });
@@ -1478,6 +2390,7 @@
                 if (status === "done" && result && result.recipe) {
                   extractionHistory[idx].recipeName = result.recipe.name;
                   extractionHistory[idx].result = result;
+                  extractionHistory[idx].thumbnail = result.recipe_photo || '';
                 }
                 saveHistory();
               }

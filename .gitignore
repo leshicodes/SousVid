@@ -22,9 +22,12 @@ cookies/cookies.txt
 .idea/
 *.swp
 *.swo
-scripts/launch_session.ps1
+scripts/launch_session*
 *.pen
 mealie.openapi.json
+scripts/models/
+litellm/
+docs/plans
 
 # -- OS ------------------------------------------------------------------------
 .DS_Store

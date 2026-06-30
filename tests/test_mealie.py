@@ -94,3 +94,58 @@ def test_step_without_title_omits_name_key():
     )
     obj = _build_schema_org(recipe)
     assert "name" not in obj["recipeInstructions"][0]
+
+
+# ── Tag processing tests ─────────────────────────────────────────────────────
+
+from unittest.mock import MagicMock, patch
+from app.mealie import _ensure_tags_exist
+
+@patch("httpx.Client")
+@patch("app.mealie.settings")
+def test_ensure_tags_exist_case_insensitive_and_failure(mock_settings, mock_client_class):
+    mock_settings.mealie_base_url = "http://mealie.local"
+    mock_settings.mealie_api_token = "dummy-token"
+
+    mock_client = MagicMock()
+    mock_client_class.return_value = mock_client
+
+    # We check two keywords: "Baking" and "NewTag"
+    # "Baking" matches an existing Mealie tag "baking" case-insensitively.
+    # "NewTag" is not found and fails to create with a 500 error.
+    def mock_get(url, **kwargs):
+        resp = MagicMock()
+        if "search=Baking" in url:
+            resp.is_success = True
+            resp.json.return_value = {
+                "items": [
+                    {"id": "baking-id", "name": "baking"}
+                ]
+            }
+        elif "search=NewTag" in url:
+            resp.is_success = True
+            resp.json.return_value = {"items": []}
+        else:
+            resp.is_success = False
+        return resp
+
+    def mock_post(url, json, **kwargs):
+        resp = MagicMock()
+        if "organizers/tags" in url and json.get("name") == "NewTag":
+            resp.is_success = False
+            resp.status_code = 500
+            resp.text = "Internal Server Error"
+        else:
+            resp.is_success = False
+        return resp
+
+    mock_client.get.side_effect = mock_get
+    mock_client.post.side_effect = mock_post
+
+    tags = _ensure_tags_exist(["Baking", "NewTag"])
+
+    # "Baking" should be matched case-insensitively and resolved.
+    # "NewTag" creation failure should not throw a KeyError and instead be skipped.
+    assert len(tags) == 1
+    assert tags[0] == {"id": "baking-id", "name": "Baking"}
+

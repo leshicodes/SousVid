@@ -45,11 +45,13 @@ def test_crop_and_optimize_corrupted_base64():
 
 
 @patch("httpx.Client")
+@patch("app.mealie._get_group_slug")
 @patch("app.mealie.settings")
-def test_post_to_mealie_uploads_image(mock_settings, mock_client_class):
+def test_post_to_mealie_uploads_image(mock_settings, mock_get_group_slug, mock_client_class):
     mock_settings.mealie_configured = True
     mock_settings.mealie_base_url = "http://mealie.local"
     mock_settings.mealie_api_token = "dummy-token"
+    mock_get_group_slug.return_value = ""
 
     # Set up client mock
     mock_client = MagicMock()

@@ -258,3 +258,4 @@ ruff check app/ tests/
 - [ ] Cookie auto-refresh warning -- detect expired Instagram cookies and surface a clear UI message
 - [ ] GPU support -- Dockerfile is CPU-only; add a CUDA variant for Nvidia GPU acceleration
 - [x] Mealie -- automatically try to get a recipe photo from the video (would be nice if it was cut and optimized for web viewing)
+- [ ] Mealie -- fix the `Open in Mealie` button functionality. 
