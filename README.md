@@ -15,10 +15,11 @@ flowchart TD
     C{"Caption looks\nlike a recipe?"}
     D["ffmpeg: extract frames\n Whisper: transcribe audio"]
     E["Caption used directly\n Whisper skipped"]
-    F["OpenRouter LLM\nextract structured recipe"]
-    G{"Push to\nMealie?"}
-    H["POST to Mealie\nrecipe created with org_url"]
-    I(["Return to UI\nJSON + Markdown download + Mealie link"])
+    F["OpenRouter LLM\nextract recipe + select dish photo frame"]
+    G["Crop & optimize photo\n(center-crop portrait to square)"]
+    H{"Push to\nMealie?"}
+    I["POST to Mealie\n& upload recipe photo"]
+    J(["Return to UI\nJSON + Markdown + Photo + Mealie link"])
 
     A --> B
     B --> C
@@ -27,11 +28,12 @@ flowchart TD
     D --> F
     E --> F
     F --> G
-    G -->|"Enabled"| H --> I
-    G -->|"Disabled"| I
+    G --> H
+    H -->|"Enabled"| I --> J
+    H -->|"Disabled"| J
 
     style E fill:#1a3a1a,stroke:#34d399,color:#34d399
-    style H fill:#1a2a3a,stroke:#6c63ff,color:#a78bfa
+    style I fill:#1a2a3a,stroke:#6c63ff,color:#a78bfa
 ```
 
 1. **Paste** an Instagram Reel, TikTok, or YouTube Shorts URL
@@ -184,6 +186,7 @@ When a recipe is pushed to Mealie:
 - All ingredients and instructions are fully populated via `POST /api/recipes/create/html-or-json`
 - The source video URL is saved in Mealie's **"Original URL"** field (`org_url`)
 - The URL is also appended to the recipe description as a fallback
+- The best representative frame showing the completed dish is automatically chosen by the multimodal LLM, center-cropped to a square (if portrait), optimized for web viewing, and uploaded to the recipe via `PUT /api/recipes/{slug}/image`
 
 ### Health check
 
@@ -254,4 +257,4 @@ ruff check app/ tests/
 - [ ] Batch import -- accept a list of URLs and process sequentially
 - [ ] Cookie auto-refresh warning -- detect expired Instagram cookies and surface a clear UI message
 - [ ] GPU support -- Dockerfile is CPU-only; add a CUDA variant for Nvidia GPU acceleration
-- [ ] Mealie -- automatically try to get a recipe photo from the video (would be nice if it was cut and optimized for web viewing)
+- [x] Mealie -- automatically try to get a recipe photo from the video (would be nice if it was cut and optimized for web viewing)
