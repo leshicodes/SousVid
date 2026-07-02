@@ -28,3 +28,8 @@ redis==5.2.1
 
 # Image processing for recipe photos
 Pillow>=10.0.0
+
+# Auth: JWT tokens and password hashing
+# Using bcrypt directly (not via passlib) for Python 3.13 + bcrypt >= 4.x compatibility.
+python-jose[cryptography]>=3.3.0
+bcrypt>=4.0.0

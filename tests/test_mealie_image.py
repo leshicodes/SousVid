@@ -45,7 +45,7 @@ def test_crop_and_optimize_corrupted_base64():
 
 
 @patch("httpx.Client")
-@patch("app.mealie._get_group_slug")
+@patch("app.services.mealie.MealieService._get_group_slug")
 @patch("app.mealie.settings")
 def test_post_to_mealie_uploads_image(mock_settings, mock_get_group_slug, mock_client_class):
     mock_settings.mealie_configured = True
@@ -139,11 +139,13 @@ def test_select_recipe_photo_api_call():
 @patch("app.pipeline.extract_frames")
 @patch("app.pipeline.transcribe")
 @patch("app.pipeline.extract_recipe")
-@patch("app.pipeline.post_to_mealie")
+@patch("app.services.mealie.MealieService.push_recipe")
+@patch("app.db.get_service")
 @patch("app.llm.client.chat.completions.create")
 def test_pipeline_photo_retry(
     mock_chat_create,
-    mock_post_to_mealie,
+    mock_get_service,
+    mock_push_recipe,
     mock_extract_recipe,
     mock_transcribe,
     mock_extract_frames,
@@ -171,8 +173,23 @@ def test_pipeline_photo_retry(
     )
     mock_extract_recipe.return_value = mock_recipe
 
+    # Mock Mealie service retrieval from database
+    mock_get_service.return_value = {
+        "id": "mealie-service",
+        "name": "Mealie",
+        "type": "mealie",
+        "url": "http://mealie.local",
+        "api_token": "dummy-token",
+        "is_active": True
+    }
+
     # Mock Mealie push
-    mock_post_to_mealie.return_value = {"slug": "test-retry", "mealie_url": "http://mealie/r/test-retry"}
+    mock_push_recipe.return_value = {
+        "success": True,
+        "slug": "test-retry",
+        "url": "http://mealie/r/test-retry",
+        "error": None
+    }
 
     # Mock LLM photo-only selection response (should return index 1 of the new batch, which is frame3)
     mock_chat_resp = MagicMock()
@@ -182,7 +199,7 @@ def test_pipeline_photo_retry(
     mock_chat_create.return_value = mock_chat_resp
 
     from app.pipeline import run_pipeline
-    res = run_pipeline("http://example.com/video", push_to_mealie=True)
+    res = run_pipeline("http://example.com/video", service_ids=["mealie-service"])
 
     # Verify that extract_recipe was called with initial frames
     mock_extract_recipe.assert_called_once_with("Video caption:\nCaption\n\nAudio transcript:\nTranscript text", ["frame0", "frame1"])
@@ -191,9 +208,9 @@ def test_pipeline_photo_retry(
     assert mock_extract_frames.call_count == 2
     mock_extract_frames.assert_any_call("/tmp/video.mp4", segment="hook_and_plating")
 
-    # Verify that post_to_mealie was called with the second batch of frames and the new photo index (1)
-    mock_post_to_mealie.assert_called_once()
-    called_recipe = mock_post_to_mealie.call_args[0][0]
+    # Verify that push_recipe was called with the second batch of frames and the new photo index (1)
+    mock_push_recipe.assert_called_once()
+    called_recipe = mock_push_recipe.call_args[0][0]
     assert called_recipe.recipe_photo_idx == 1
-    assert mock_post_to_mealie.call_args[1]["frames"] == ["frame2", "frame3", "frame4"]
+    assert mock_push_recipe.call_args[1]["frames"] == ["frame2", "frame3", "frame4"]
 

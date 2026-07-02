@@ -30,7 +30,7 @@ def test_health_response_shape():
     response = client.get("/health")
     data = response.json()
     assert data["status"] == "ok"
-    assert "mealie" in data
+    assert "services" in data
     assert "llm" in data
     assert "queue" in data
 
@@ -41,12 +41,11 @@ def test_health_queue_section():
     assert "broker" in queue
 
 
-def test_health_mealie_section():
+def test_health_services_section():
     response = client.get("/health")
-    mealie = response.json()["mealie"]
-    assert "configured" in mealie
-    # In test environment MEALIE_URL is not set, so should be False
-    assert mealie["configured"] is False
+    services = response.json()["services"]
+    assert "count" in services
+    assert services["count"] >= 0
 
 
 def test_health_llm_section():

@@ -108,7 +108,7 @@ def test_ensure_tags_exist_case_insensitive_and_failure(mock_settings, mock_clie
     mock_settings.mealie_api_token = "dummy-token"
 
     mock_client = MagicMock()
-    mock_client_class.return_value = mock_client
+    mock_client_class.return_value.__enter__.return_value = mock_client
 
     # We check two keywords: "Baking" and "NewTag"
     # "Baking" matches an existing Mealie tag "baking" case-insensitively.

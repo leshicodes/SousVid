@@ -23,10 +23,8 @@ class Settings(BaseSettings):
     openrouter_api_key: str
     openrouter_model: str = "google/gemini-flash-1.5"
 
-    # -- Mealie (optional) ---------------------------------------------------
-    # Both must be set for Mealie integration to activate.
-    mealie_url: str = ""
-    mealie_api_token: str = ""
+    # -- SQLite Database -----------------------------------------------------
+    db_path: str = "/app/data/sousvid.db"
 
     # -- Whisper -------------------------------------------------------------
     whisper_model: str = "small"
@@ -40,17 +38,12 @@ class Settings(BaseSettings):
     # -- Redis / Celery --------------------------------------------------------
     redis_url: str = "redis://redis:6379/0"
 
-    # -- Derived properties --------------------------------------------------
-
-    @property
-    def mealie_configured(self) -> bool:
-        """True if both MEALIE_URL and MEALIE_API_TOKEN are set."""
-        return bool(self.mealie_url and self.mealie_api_token)
-
-    @property
-    def mealie_base_url(self) -> str:
-        """Mealie URL with any trailing slash removed."""
-        return self.mealie_url.rstrip("/")
+    # -- Auth / JWT -----------------------------------------------------------
+    # If left empty, a secret is auto-generated at startup and persisted to
+    # <data_dir>/.jwt_secret so it survives container restarts without
+    # requiring a manual .env change.
+    jwt_secret: str = ""
+    jwt_expire_hours: int = 168  # 7 days
 
     @field_validator("openrouter_api_key")
     @classmethod

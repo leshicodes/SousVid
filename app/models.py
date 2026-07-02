@@ -4,7 +4,7 @@ from typing import Optional
 
 class ExtractRequest(BaseModel):
     url: str = Field(..., description="URL of the Instagram Reel, TikTok, or YouTube Shorts video")
-    push_to_mealie: bool = Field(True, description="Whether to push the extracted recipe to Mealie (default: on)")
+    service_ids: list[str] = Field(default_factory=list, description="List of configured service IDs to push the extracted recipe to")
 
 
 class RecipeInstruction(BaseModel):
@@ -28,9 +28,7 @@ class RecipeSchema(BaseModel):
 
 class ExtractResponse(BaseModel):
     recipe: RecipeSchema
-    mealie_url: Optional[str] = None
-    mealie_slug: Optional[str] = None
-    mealie_warning: Optional[str] = None  # set if Mealie upload failed (non-fatal)
+    pushed_results: dict[str, dict] = Field(default_factory=dict, description="Results of pushing to services, keyed by service ID")
     transcript: Optional[str] = None  # included for debugging
     recipe_photo: Optional[str] = Field(None, description="Base64-encoded optimized recipe photo for UI display")
 

@@ -20,7 +20,6 @@ import shutil
 from app.downloader import download_video
 from app.frame_extractor import extract_frames
 from app.llm import extract_recipe
-from app.mealie import post_to_mealie
 from app.models import ExtractResponse
 from app.transcriber import transcribe
 
@@ -49,16 +48,26 @@ def _description_looks_like_recipe(text: str | None) -> bool:
     return has_multiple_lines and (has_ingredient_keyword or measurement_count >= 2)
 
 
-def run_pipeline(url: str, push_to_mealie: bool = True) -> ExtractResponse:
+def _update_step(job_id: str | None, step: str):
+    if job_id:
+        try:
+            from app.db import update_extraction
+            update_extraction(job_id=job_id, status="running", step=step)
+        except Exception as e:
+            logger.warning(f"Failed to update step '{step}' in DB: {e}")
+
+
+def run_pipeline(url: str, service_ids: list[str] = None, job_id: str = None) -> ExtractResponse:
     """
     Run the full video-to-recipe pipeline and return the result.
 
     Args:
-        url:            The video URL (Instagram, TikTok, YouTube Shorts, etc.).
-        push_to_mealie: Whether to upload the recipe to Mealie after extraction.
+        url:          The video URL (Instagram, TikTok, YouTube Shorts, etc.).
+        service_ids:  List of service IDs to push the extracted recipe to.
+        job_id:       Task / Job ID for database updates.
 
     Returns:
-        ExtractResponse with the recipe, optional Mealie URL, and debug transcript.
+        ExtractResponse with the recipe, push details, and debug transcript.
 
     Raises:
         SousVidError: on download, transcription, or extraction failure.
@@ -69,21 +78,23 @@ def run_pipeline(url: str, push_to_mealie: bool = True) -> ExtractResponse:
 
     try:
         # 1. Download ---------------------------------------------------------
+        _update_step(job_id, "downloading")
         video_path, description = download_video(url)
         video_dir = os.path.dirname(video_path)
 
         # 2. Frames -----------------------------------------------------------
         logger.info("Extracting frames...")
+        _update_step(job_id, "frames")
         frames = extract_frames(video_path)
 
         # 3. Transcribe (or skip) ---------------------------------------------
+        _update_step(job_id, "transcribing")
         if _description_looks_like_recipe(description):
             logger.info("Caption looks like a full recipe -- skipping Whisper.")
             transcript = f"Creator's caption:\n{description}"
         else:
             logger.info("Transcribing audio...")
             audio_text = transcribe(video_path)
-            # Send both caption and audio to the LLM for maximum context.
             transcript = (
                 f"Video caption:\n{description or '(none)'}\n\n"
                 f"Audio transcript:\n{audio_text}"
@@ -91,6 +102,7 @@ def run_pipeline(url: str, push_to_mealie: bool = True) -> ExtractResponse:
 
         # 4. LLM extraction ---------------------------------------------------
         logger.info("Extracting recipe via LLM...")
+        _update_step(job_id, "llm")
         recipe = extract_recipe(transcript, frames)
 
         # 4.5. Photo Selection Retry (if initial frames yielded no photo) ------
@@ -110,12 +122,30 @@ def run_pipeline(url: str, push_to_mealie: bool = True) -> ExtractResponse:
             except Exception as retry_exc:
                 logger.warning(f"Photo selection retry failed (non-fatal): {retry_exc}")
 
-        # 5. Mealie upload -----------------------------------------------------
-        if push_to_mealie:
-            mealie_result = post_to_mealie(recipe, source_url=url, frames=frames)
-        else:
-            logger.info("Mealie upload skipped (disabled by user).")
-            mealie_result = {"skipped": True, "reason": "Disabled by user"}
+        # 5. Push to configured services ---------------------------------------
+        pushed_results = {}
+        if service_ids:
+            logger.info("Pushing to services...")
+            _update_step(job_id, "mealie")
+            from app.db import get_service
+            from app.services import get_service_instance
+            for s_id in service_ids:
+                try:
+                    s_data = get_service(s_id)
+                    if not s_data:
+                        logger.warning(f"Service {s_id} not found in database.")
+                        pushed_results[s_id] = {"success": False, "error": "Service not found"}
+                        continue
+                    if not s_data.get("is_active", 1):
+                        logger.info(f"Skipping inactive service: {s_data['name']}")
+                        pushed_results[s_id] = {"success": False, "error": "Service is inactive"}
+                        continue
+                    srv = get_service_instance(s_data)
+                    res = srv.push_recipe(recipe, source_url=url, frames=frames)
+                    pushed_results[s_id] = res
+                except Exception as e:
+                    logger.error(f"Failed to push to service {s_id}: {e}")
+                    pushed_results[s_id] = {"success": False, "error": str(e)}
 
         # 6. Extract optimized recipe photo for UI response --------------------
         recipe_photo_b64 = None
@@ -124,7 +154,7 @@ def run_pipeline(url: str, push_to_mealie: bool = True) -> ExtractResponse:
             and recipe.recipe_photo_idx is not None
             and 0 <= recipe.recipe_photo_idx < len(frames)
         ):
-            from app.mealie import crop_and_optimize_image
+            from app.services.mealie import crop_and_optimize_image
             import base64
             logger.info(f"Optimizing recipe photo (frame {recipe.recipe_photo_idx}) for UI display...")
             img_bytes = crop_and_optimize_image(frames[recipe.recipe_photo_idx])
@@ -133,15 +163,12 @@ def run_pipeline(url: str, push_to_mealie: bool = True) -> ExtractResponse:
 
         return ExtractResponse(
             recipe=recipe,
-            mealie_url=mealie_result.get("mealie_url"),
-            mealie_slug=mealie_result.get("slug"),
-            mealie_warning=mealie_result.get("reason") if mealie_result.get("skipped") else None,
+            pushed_results=pushed_results,
             transcript=transcript,
             recipe_photo=recipe_photo_b64,
         )
 
     finally:
-        # Always clean up temp files, even if a step above raised an exception.
         if video_dir and os.path.isdir(video_dir):
             shutil.rmtree(video_dir, ignore_errors=True)
             logger.info("Temp files cleaned up.")

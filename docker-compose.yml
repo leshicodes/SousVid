@@ -9,6 +9,7 @@ services:
       - .env
     volumes:
       - ./cookies:/app/cookies
+      - ./data:/app/data
     depends_on:
       - redis
     healthcheck:
@@ -28,6 +29,7 @@ services:
     volumes:
       - whisper-cache:/root/.cache/huggingface
       - ./cookies:/app/cookies
+      - ./data:/app/data
     depends_on:
       - redis
 
